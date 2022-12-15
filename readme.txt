@@ -1,6 +1,6 @@
-=== CURCY - Multi Currency for WooCommerce - The best free currency exchange plugin - Run smoothly on WooCommerce 6.x===
-Contributors: villatheme, mrt3vn
-Donate link: http://www.villatheme.com/donate
+=== CURCY - Multi Currency for WooCommerce by Artslab by Artslab Creatives ===
+Contributors: artslabcreatives, mrt3vn
+Donate link: http://www.artslabcreatives.com/donate
 Tags: best woocommerce currency switcher, ecommerce, multi currency for woo, multi currency in woocommerce, woocommerce, woocommerce auto currency switcher, woocommerce currency switcher, woocommerce exchange rate, woocommerce multi currency, woocommerce multi currency switcher, wordpress
 Requires at least: 5.0.0
 Tested up to: 6.0
@@ -11,11 +11,9 @@ Stable tag: 2.1.24
 
 == Description ==
 
-If you have a WooCommerce store, CURCY - Multi Currency for WooCommerce is a must-have plugin for you. CURCY - Multi Currency for WooCommerce allows your customers to switch between currencies and helps your store accept payments in multi-currency. The exchange rate can be set up manually or automatically. The plugin can automatically get customers’ geolocation and display the price in the customers’ native currency.
+If you have a WooCommerce store, CURCY - Multi Currency for WooCommerce by Artslab is a must-have plugin for you. CURCY - Multi Currency for WooCommerce by Artslab allows your customers to switch between currencies and helps your store accept payments in multi-currency. The exchange rate can be set up manually or automatically. The plugin can automatically get customers’ geolocation and display the price in the customers’ native currency.
 
->[Try the Demo](http://new2new.com/?item=woo-multi-currency "Demo Multi Currency for WooCommerce") | [Documents](http://docs.villatheme.com/?item=woocommerce-multi-currency "Documents") | [Pro Version](https://1.envato.market/jABDP "Pro Version") | [Facebook group](https://www.facebook.com/groups/villatheme "VillaTheme")
 
-[youtube https://youtu.be/8SH2tex-xxM]
 
 ### Important Notice:
 
@@ -87,12 +85,12 @@ Check screenshots at https://plugins.artslabcreatives.com/woo-multi-currency/ or
 
 ### Documentation
 
-- [Getting Started](http://docs.villatheme.com/?item=woocommerce-multi-currency)
+- [Getting Started](http://docs.artslabcreatives.com/?item=woocommerce-multi-currency)
 
 ### Plugin Links
 
 - [Project Page](https://plugins.artslabcreatives.com)
-- [Documentation](http://docs.villatheme.com/?item=woocommerce-multi-currency)
+- [Documentation](http://docs.artslabcreatives.com/?item=woocommerce-multi-currency)
 - [Report Bugs/Issues](https://plugins.artslabcreatives.com/supports)
 
 ### MAY BE YOU NEED

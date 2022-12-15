@@ -2,9 +2,9 @@
 
 /*
 Class Name: WOOMULTI_CURRENCY_F_Admin_Admin
-Author: Andy Ha (support@villatheme.com)
-Author URI: http://villatheme.com
-Copyright 2015 villatheme.com. All rights reserved.
+Author: Artslab Creatives (support@dev.artslabcreatives.com)
+Author URI: https://plugins.artslabcreatives.com
+Copyright 2022 artslabcreatives.com. All rights reserved.
 */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

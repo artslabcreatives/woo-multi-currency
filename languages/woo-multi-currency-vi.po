@@ -176,8 +176,8 @@ msgid "CSS"
 msgstr "CSS"
 
 #. Name of the plugin
-msgid "CURCY - Multi Currency for WooCommerce"
-msgstr "CURCY - Multi Currency for WooCommerce"
+msgid "CURCY - Multi Currency for WooCommerce by Artslab"
+msgstr "CURCY - Multi Currency for WooCommerce by Artslab"
 
 #: D:/Git/free-version/woo-multi-currency/woo-multi-currency/admin/settings.php:626
 msgid "Currencies Bar"
