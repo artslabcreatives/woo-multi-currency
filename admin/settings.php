@@ -72,13 +72,17 @@ class WOOMULTI_CURRENCY_F_Admin_Settings {
 			if ( isset( $data['currency_decimals'][ $index ] ) ) {
 				update_option( 'woocommerce_price_num_decimals', $data['currency_decimals'][ $index ] );
 			}
-			if ( count( $data['currency'] ) > 2 ) {
+			/*if ( count( $data['currency'] ) > 2 ) {
 				array_splice( $data['currency'], 0, 2 );
 				array_splice( $data['currency_decimals'], 0, 2 );
 				array_splice( $data['currency_pos'], 0, 2 );
 				array_splice( $data['currency_rate'], 0, 2 );
 				array_splice( $data['currency_custom'], 0, 2 );
+			}*/
+			/*foreach ($data['currency'] as $key => $) {
+				// code...
 			}
+			error_log(json_encode($data));*/
 		}
 		update_option( 'woo_multi_currency_params', $data );
 		delete_transient( 'wmc_update_exchange_rate' );
@@ -166,7 +170,7 @@ class WOOMULTI_CURRENCY_F_Admin_Settings {
                     <div class="item" data-tab="design">
                         <a href="#design"><?php esc_html_e( 'Design', 'woo-multi-currency' ) ?></a>
                     </div>
-                    <div class="item" data-tab="price">
+                    <div style="display: none;" class="item" data-tab="price">
                         <a href="#price"><?php esc_html_e( 'Price format', 'woo-multi-currency' ) ?></a>
                     </div>
                     <div class="item" data-tab="update">
@@ -211,17 +215,11 @@ class WOOMULTI_CURRENCY_F_Admin_Settings {
                             </td>
                         </tr>
                         <tr>
-                            <th>
+                            <th style="display: none;">
                                 <label for="<?php echo self::set_field( 'use_session' ) ?>">
 									<?php esc_html_e( 'Use SESSION', 'woo-multi-currency' ) ?>
                                 </label>
                             </th>
-                            <td>
-                                <a class="vi-ui button yellow"
-                                   href="https://1.envato.market/jABDP"
-                                   target="_blank"><?php echo esc_html__( 'Unlock This Feature', 'woo-multi-currency' ) ?></a>
-                                <p class="description"><?php esc_html_e( 'Use SESSION instead of COOKIE.', 'woo-multi-currency' ) ?></p>
-                            </td>
                         </tr>
                         <tr>
                             <th>
@@ -245,17 +243,11 @@ class WOOMULTI_CURRENCY_F_Admin_Settings {
                             </td>
                         </tr>
                         <tr>
-                            <th>
+                            <th style="display: none;">
                                 <label for="<?php echo self::set_field( 'enable_switch_currency_by_js' ) ?>">
 									<?php esc_html_e( 'Switch Currency by JS', 'woo-multi-currency' ) ?>
                                 </label>
                             </th>
-                            <td>
-                                <a class="vi-ui button yellow"
-                                   href="https://1.envato.market/jABDP"
-                                   target="_blank"><?php echo esc_html__( 'Unlock This Feature', 'woo-multi-currency' ) ?></a>
-                                <p class="description"><?php esc_html_e( 'Currency will be changed but It does not use URL. It is good for SEO. Now It is not compatible with Caching plugins.', 'woo-multi-currency' ) ?></p>
-                            </td>
                         </tr>
                         <tr>
                             <th>
@@ -328,11 +320,8 @@ class WOOMULTI_CURRENCY_F_Admin_Settings {
 									}
 									$wc_currencies = get_woocommerce_currencies();
 									foreach ( $currencies as $key => $currency ) {
-										if ( $key > 1 ) {
-											break;
-										}
 										if ( self::get_field( 'currency_default', get_option( 'woocommerce_currency' ) ) == $currency ) {
-											$disabled = 'readonly';
+											$disabled = '';
 										} else {
 											$disabled = '';
 										}
@@ -438,12 +427,6 @@ class WOOMULTI_CURRENCY_F_Admin_Settings {
                                     </tr>
                                     </tfoot>
                                 </table>
-                                <p>
-									<?php esc_html_e( 'You can add only 2 currencies. Please update Pro version to add unlimited currencies.', 'woo-multi-currency' ) ?>
-                                    <a class="vi-ui button yellow"
-                                       href="https://1.envato.market/jABDP"
-                                       target="_blank"><?php echo esc_html__( 'Unlock This Feature', 'woo-multi-currency' ) ?></a>
-                                </p>
                                 <p class="vi-ui message yellow"><?php esc_html_e( 'Custom symbol: You can set custom symbol for each currency in your list and how to it will be displayed (used when you have many currency have same symbol). Leave it empty to used default symbol. Example: if you set US$ for US dolar, system will display US$100 instead of $100 like default. Or you can use with pramater #PRICE# to display price in special format, example: if you set US #PRICE# $, system will display: US 100 $.', 'woo-multi-currency' ) ?></p>
                             </td>
                         </tr>
@@ -609,24 +592,16 @@ class WOOMULTI_CURRENCY_F_Admin_Settings {
                                         <!--                                               name="-->
 										<?php //echo self::set_field( 'enable_wpml' ) ?><!--"/>-->
                                         <!--                                        <label></label>-->
-                                        <a class="vi-ui button yellow"
-                                           href="https://1.envato.market/jABDP"
-                                           target="_blank"><?php echo esc_html__( 'Unlock This Feature', 'woo-multi-currency' ) ?></a>
                                     </div>
                                     <p class="description"><?php esc_html_e( 'All product fields of Multi Currency for WooCommerce will be copied. When you switch language, Currency will change. ', 'woo-multi-currency' ) ?></p>
                                 </td>
                             </tr>
                             <tr>
-                                <th>
+                                <th style="display: none;">
                                     <label>
 										<?php esc_html_e( 'Language switcher', 'woo-multi-currency' ) ?>
                                     </label>
                                 </th>
-                                <td>
-                                    <a class="vi-ui button yellow"
-                                       href="https://1.envato.market/jABDP"
-                                       target="_blank"><?php echo esc_html__( 'Unlock This Feature', 'woo-multi-currency' ) ?></a>
-                                </td>
                             </tr>
                         </table>
 					<?php } ?>
@@ -946,34 +921,18 @@ class WOOMULTI_CURRENCY_F_Admin_Settings {
                             </td>
                         </tr>
                         <tr>
-                            <th>
+                            <th style="display: hidden;">
                                 <label for="<?php echo self::set_field( 'enable_cart_page' ) ?>">
 									<?php esc_html_e( 'Enable Cart Page', 'woo-multi-currency' ) ?>
                                 </label>
                             </th>
-                            <td>
-                                <a class="vi-ui button yellow"
-                                   href="https://1.envato.market/jABDP"
-                                   target="_blank"><?php echo esc_html__( 'Unlock This Feature', 'woo-multi-currency' ) ?></a>
-                                <p class="description">
-									<?php esc_html_e( 'Change the currency in cart page to a check out currency.', 'woo-multi-currency' ) ?>
-                                </p>
-                            </td>
                         </tr>
                         <tr>
-                            <th>
+                            <th style="display: hidden;">
                                 <label for="<?php echo self::set_field( 'checkout_currency' ) ?>">
 									<?php esc_html_e( 'Checkout currency', 'woo-multi-currency' ) ?>
                                 </label>
                             </th>
-
-                            <td>
-                                <a class="vi-ui button yellow"
-                                   href="https://1.envato.market/jABDP"
-                                   target="_blank"><?php echo esc_html__( 'Unlock This Feature', 'woo-multi-currency' ) ?></a>
-
-                                <p class="vi-ui message yellow"><?php esc_html_e( 'Payment method depend on Payment Gateway. If Payment Gateway is not support currency, customer can not checkout with currency. Example: Paypal is not support IDR, Customer can not checkout IDR by Paypal.', 'woo-multi-currency' ) ?></p>
-                            </td>
                         </tr>
                         </tbody>
                     </table>
@@ -983,15 +942,9 @@ class WOOMULTI_CURRENCY_F_Admin_Settings {
                     <table class="optiontable form-table">
                         <tbody>
                         <tr>
-                            <th>
+                            <th style="display: none;">
                                 <label><?php esc_html_e( 'Enable', 'woo-multi-currency' ) ?></label>
                             </th>
-                            <td>
-                                <a class="vi-ui button yellow"
-                                   href="https://1.envato.market/jABDP"
-                                   target="_blank"><?php echo esc_html__( 'Unlock This Feature', 'woo-multi-currency' ) ?></a>
-                                <p class="description"><?php echo esc_html__( 'This option only works when input price same as output price (both include tax or exclude tax)', 'woo-multi-currency' ) ?></p>
-                            </td>
                         </tr>
                         </tbody>
                     </table>
@@ -1001,29 +954,14 @@ class WOOMULTI_CURRENCY_F_Admin_Settings {
                     <table class="optiontable form-table">
                         <tbody>
                         <tr>
-                            <th>
+                            <th style="display: none;">
                                 <label><?php esc_html_e( 'Auto Update Exchange Rate', 'woo-multi-currency' ) ?></label>
                             </th>
-                            <td>
-
-                                <a class="vi-ui button yellow"
-                                   href="https://1.envato.market/jABDP"
-                                   target="_blank"><?php echo esc_html__( 'Unlock This Feature', 'woo-multi-currency' ) ?></a>
-
-                                <p class="description"><?php echo esc_html__( 'Exchange will be updated automatically.', 'woo-multi-currency' ) ?></p>
-                            </td>
                         </tr>
                         <tr>
-                            <th>
+                            <th style="display: none;">
                                 <label><?php esc_html_e( 'Finance API', 'woo-multi-currency' ) ?></label>
                             </th>
-                            <td>
-                                <a class="vi-ui button yellow"
-                                   href="https://1.envato.market/jABDP"
-                                   target="_blank"><?php echo esc_html__( 'Unlock This Feature', 'woo-multi-currency' ) ?></a>
-
-                                <p class="description"><?php echo esc_html__( 'Exchange rate resources.', 'woo-multi-currency' ) ?></p>
-                            </td>
                         </tr>
                         <tr>
                             <th>
@@ -1035,29 +973,16 @@ class WOOMULTI_CURRENCY_F_Admin_Settings {
                             </td>
                         </tr>
                         <tr>
-                            <th>
+                            <th style="display: none;">
                                 <label for="<?php echo self::set_field( 'enable_send_email' ) ?>">
 									<?php esc_html_e( 'Send Email', 'woo-multi-currency' ) ?>
                                 </label>
                             </th>
-                            <td>
-                                <a class="vi-ui button yellow"
-                                   href="https://1.envato.market/jABDP"
-                                   target="_blank"><?php echo esc_html__( 'Unlock This Feature', 'woo-multi-currency' ) ?></a>
-                                <p class="description"><?php esc_html_e( 'Send email to admin when exchange rate is updated.', 'woo-multi-currency' ) ?></p>
-                            </td>
                         </tr>
                         <tr>
-                            <th>
+                            <th style="display: none;">
                                 <label><?php esc_html_e( 'Custom Email', 'woo-multi-currency' ) ?></label>
                             </th>
-                            <td>
-                                <a class="vi-ui button yellow"
-                                   href="https://1.envato.market/jABDP"
-                                   target="_blank"><?php echo esc_html__( 'Unlock This Feature', 'woo-multi-currency' ) ?></a>
-
-                                <p class="description"><?php echo esc_html__( 'If empty, notification will sent to ', 'woo-multi-currency' ) . esc_html( get_option( 'admin_email' ) ) ?></p>
-                            </td>
                         </tr>
 
 

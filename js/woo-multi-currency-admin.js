@@ -136,10 +136,6 @@ jQuery(document).ready(function () {
 
         jQuery('.wmc-add-currency').unbind();
         jQuery('.wmc-add-currency').on('click', function () {
-            if (jQuery('.wmc-currency-data').length >= 2) {
-                alert('Please upgrade to Premium version');
-                return;
-            }
             jQuery('.wmc-currency-data').last().find('select.select2').select2('destroy');
             var new_row = jQuery('.wmc-currency-data').last().clone();
             jQuery('.wmc-currency-data').last().find('select.select2').select2();
@@ -147,7 +143,6 @@ jQuery(document).ready(function () {
             jQuery(new_row).appendTo('.wmc-currency-options tbody');
             remove_currency();
             jQuery('.wmc-currency-data').last().find('select.select2').select2().change();
-
         });
 
         jQuery('select[name="woo_multi_currency_params[currency][]"]').on('change', function () {

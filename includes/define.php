@@ -41,18 +41,3 @@ vi_include_folder( WOOMULTI_CURRENCY_F_ADMIN, 'WOOMULTI_CURRENCY_F_Admin_' );
 vi_include_folder( WOOMULTI_CURRENCY_F_WIDGETS, 'WOOMULTI_CURRENCY_F_Widget_' );
 vi_include_folder( WOOMULTI_CURRENCY_F_FRONTEND, 'WOOMULTI_CURRENCY_F_Frontend_' );
 vi_include_folder( WOOMULTI_CURRENCY_F_PLUGINS, 'WOOMULTI_CURRENCY_F_Plugin_' );
-
-if ( class_exists( 'VillaTheme_Support' ) ) {
-	new VillaTheme_Support( array(
-		'support'    => 'https://wordpress.org/support/plugin/woo-multi-currency/',
-		'docs'       => 'http://docs.villatheme.com/?item=woocommerce-multi-currency',
-		'review'     => 'https://wordpress.org/support/plugin/woo-multi-currency/reviews/?rate=5#rate-response',
-		'pro_url'    => 'https://1.envato.market/jABDP',
-		'css'        => WOOMULTI_CURRENCY_F_CSS,
-		'image'      => WOOMULTI_CURRENCY_F_IMAGES,
-		'slug'       => 'woo-multi-currency',
-		'menu_slug'  => 'woo-multi-currency',
-		'version'    => WOOMULTI_CURRENCY_F_VERSION,
-		'survey_url' => 'https://script.google.com/macros/s/AKfycby-nWUoi0eU47YTX5r-XXDvjoF2VyufbYMNrMJdXs_bW2grg91qeYhVTC0dqworloqS/exec'
-	) );
-}

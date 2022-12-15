@@ -53,10 +53,10 @@ class WOOMULTI_CURRENCY_F {
             </div>
 			<?php
 		}
-		if ( is_plugin_active( 'woo-multi-currency-pro/woo-multi-currency-pro.php' ) ) {
+		/*if ( is_plugin_active( 'woo-multi-currency-pro/woo-multi-currency-pro.php' ) ) {
 			deactivate_plugins( 'woo-multi-currency-pro/woo-multi-currency-pro.php' );
 			unset( $_GET['activate'] );
-		}
+		}*/
 	}
 
 	/**
