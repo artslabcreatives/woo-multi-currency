@@ -8,7 +8,7 @@ Allows you to display prices and accepts payments in multiple currencies designe
 
 We are a digital media agency that believes, through proper strategy formulation, the right amount of creativity and innovation, a brand can truly come to life, communicate and create bonds at an emotional level with their target audience.
 
-<p align="center"><a href="https://elementor.com" target="_blank"><img src="https://plugins.artslabcreatives.com/artslab-product-order-reviews/updates/elementor.svg" width="400"></a></p>
+<p align="center"><a href="https://elementor.com" target="_blank"><img src="https://plugins.artslabcreatives.com/woo-multi-currency/updates/elementor.svg" width="400"></a></p>
 
 ## Elementor
 

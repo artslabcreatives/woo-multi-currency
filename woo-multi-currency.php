@@ -95,3 +95,6 @@ class WOOMULTI_CURRENCY_F {
 }
 
 new WOOMULTI_CURRENCY_F();
+
+require_once( __DIR__ . '/updater.php' );
+new ALCMCUpdater();
