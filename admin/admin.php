@@ -227,7 +227,7 @@ class WOOMULTI_CURRENCY_F_Admin_Admin {
 	 */
 	public function menu_page() {
 		add_menu_page(
-			esc_html__( 'Multi Currency for WooCommerce', 'woo-multi-currency' ), esc_html__( 'Multi Currency', 'woo-multi-currency' ), 'manage_woocommerce', 'woo-multi-currency', array(
+			esc_html__( 'Multi Currency for WooCommerce by Artslab', 'woo-multi-currency' ), esc_html__( 'Multi Currency', 'woo-multi-currency' ), 'manage_woocommerce', 'woo-multi-currency', array(
 			'WOOMULTI_CURRENCY_F_Admin_Settings',
 			'page_callback'
 		), WOOMULTI_CURRENCY_F_IMAGES . 'icon.svg', 2

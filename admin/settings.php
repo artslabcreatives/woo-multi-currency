@@ -154,7 +154,7 @@ class WOOMULTI_CURRENCY_F_Admin_Settings {
 		self::$params = get_option( 'woo_multi_currency_params', array() );
 		?>
         <div class="wrap woo-multi-currency">
-            <h2><?php esc_attr_e( 'Multi Currency for WooCommerce Settings', 'woo-multi-currency' ) ?></h2>
+            <h2><?php esc_attr_e( 'Multi Currency for WooCommerce Settings by Artslab', 'woo-multi-currency' ) ?></h2>
             <form method="post" action="" class="vi-ui form">
 				<?php wp_nonce_field( 'woo_multi_currency_settings', '_woo_multi_currency_nonce' ); ?>
                 <div class="vi-ui attached tabular menu">
