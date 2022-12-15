@@ -1,12 +1,12 @@
 <?php
 /**
- * Plugin Name: CURCY - Multi Currency for WooCommerce
- * Plugin URI: https://villatheme.com/extensions/woo-multi-currency/
- * Description: Allows you to display prices and accepts payments in multiple currencies. Working only with WooCommerce.
+ * Plugin Name: CURCY - Multi Currency for WooCommerce by Artslab Creatives
+ * Plugin URI: https://plugins.artslabcreatives.com/extensions/woo-multi-currency/
+ * Description: Allows you to display prices and accepts payments in multiple currencies designed to work only with WooCommerce.
  * Version: 2.1.26
  * Author: VillaTheme
- * Author URI: https://villatheme.com
- * Copyright 2016-2022 VillaTheme.com. All rights reserved.
+ * Author URI: https://plugins.artslabcreatives.com
+ * Copyright 2016-2022 Artslab Creatives. All rights reserved.
  * Text Domain: woo-multi-currency
  * Tested up to: 6.1
  * WC requires at least: 4.0

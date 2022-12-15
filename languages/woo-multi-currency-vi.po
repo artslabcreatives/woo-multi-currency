@@ -425,12 +425,12 @@ msgid "Horizontal Currency Symbols"
 msgstr "Biểu Tượng Tiền Tệ Ngang"
 
 #. Author URI of the plugin
-msgid "https://villatheme.com"
-msgstr "https://villatheme.com"
+msgid "https://plugins.artslabcreatives.com"
+msgstr "https://plugins.artslabcreatives.com"
 
 #. URI of the plugin
-msgid "https://villatheme.com/extensions/woo-multi-currency/"
-msgstr "https://villatheme.com/extensions/woo-multi-currency/"
+msgid "https://plugins.artslabcreatives.com/extensions/woo-multi-currency/"
+msgstr "https://plugins.artslabcreatives.com/extensions/woo-multi-currency/"
 
 #: D:/Git/free-version/woo-multi-currency/woo-multi-currency/admin/settings.php:1048
 #| msgid "If empty, notification will be sent to"

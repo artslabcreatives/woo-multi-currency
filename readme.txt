@@ -73,7 +73,7 @@ If you have a WooCommerce store, CURCY - Multi Currency for WooCommerce is a mus
 
  - **Update exchange rate automatically**: The plugin automatically updates exchange rates. You can set the time for the automatic update: every 30 minutes, 1 hour, 6 hours, 1 day, 2 days, 3 days, 1 week, 1 month.
 
- - **Select currency exchange rate APIs**: You can select to update the exchange rate from VillaTheme.com, Google Finance, Yahoo Finance. More exchange rate APIs will be added in the future.
+ - **Select currency exchange rate APIs**: You can select to update the exchange rate from Artslab Creatives, Google Finance, Yahoo Finance. More exchange rate APIs will be added in the future.
 
  - **Receive update exchange rate email**: This option of WooCommerce Multi Currency allows the admin to receive a notification email whenever it updates the exchange rate.
 
@@ -83,7 +83,7 @@ If you have a WooCommerce store, CURCY - Multi Currency for WooCommerce is a mus
 
 ### And much more things are waiting for you to discover
 
-Check screenshots at https://villatheme.com/woo-multi-currency/ or https://villatheme.com/extensions/woo-multi-currency/
+Check screenshots at https://plugins.artslabcreatives.com/woo-multi-currency/ or https://plugins.artslabcreatives.com/extensions/woo-multi-currency/
 
 ### Documentation
 
@@ -91,9 +91,9 @@ Check screenshots at https://villatheme.com/woo-multi-currency/ or https://villa
 
 ### Plugin Links
 
-- [Project Page](https://villatheme.com)
+- [Project Page](https://plugins.artslabcreatives.com)
 - [Documentation](http://docs.villatheme.com/?item=woocommerce-multi-currency)
-- [Report Bugs/Issues](https://villatheme.com/supports)
+- [Report Bugs/Issues](https://plugins.artslabcreatives.com/supports)
 
 ### MAY BE YOU NEED
 

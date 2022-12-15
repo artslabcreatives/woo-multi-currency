@@ -376,11 +376,11 @@ msgid "Horizontal Currency Symbols"
 msgstr ""
 
 #. Author URI of the plugin
-msgid "https://villatheme.com"
+msgid "https://plugins.artslabcreatives.com"
 msgstr ""
 
 #. URI of the plugin
-msgid "https://villatheme.com/extensions/woo-multi-currency/"
+msgid "https://plugins.artslabcreatives.com/extensions/woo-multi-currency/"
 msgstr ""
 
 #: D:/Git/free-version/woo-multi-currency/woo-multi-currency/admin/settings.php:1048
