@@ -3,11 +3,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_Change_Price_3rd_Plugin {
+class WOOMULTI_CURRENCY_Plugin_Change_Price_3rd_Plugin {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			add_filter( 'woocommerce_product_addons_option_price_raw', array( $this, 'change_price' ) );
 			add_filter( 'wmc_change_3rd_plugin_price', array( $this, 'change_price' ) );

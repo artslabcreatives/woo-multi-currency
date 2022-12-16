@@ -1,17 +1,17 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_Smart_Bundle_For_WooCommerce
+ * Class WOOMULTI_CURRENCY_Plugin_Smart_Bundle_For_WooCommerce
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_Smart_Bundle_For_WooCommerce {
+class WOOMULTI_CURRENCY_Plugin_Smart_Bundle_For_WooCommerce {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			if ( is_plugin_active( 'smart-bundle-for-woocommerce/smart-bundle-woocommerce.php' ) ) {
 				add_action( 'woocommerce_before_calculate_totals', array(
@@ -27,7 +27,7 @@ class WOOMULTI_CURRENCY_F_Plugin_Smart_Bundle_For_WooCommerce {
 		if ( is_admin() && ! defined( 'DOING_AJAX' ) ) {
 			return;
 		}
-		if ( $this->settings->get_current_currency() === $this->settings->get_default_currency() ) {
+		if ( $this->settings->get_current_currency()===$this->settings->get_default_currency() ) {
 			return;
 		}
 		foreach ( $cart_object->get_cart() as $cart_item_key => $cart_item ) {

@@ -1,32 +1,90 @@
 <?php
 
 /*
-Class Name: WOOMULTI_CURRENCY_F_Admin_Admin
-Author: Artslab Creatives (support@dev.artslabcreatives.com)
-Author URI: https://plugins.artslabcreatives.com
-Copyright 2022 artslabcreatives.com. All rights reserved.
+Class Name: WOOMULTI_CURRENCY_Admin_Admin
+Author: Andy Ha (support@villatheme.com)
+Author URI: http://villatheme.com
+Copyright 2015 villatheme.com. All rights reserved.
 */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Admin_Admin {
+class WOOMULTI_CURRENCY_Admin_Admin {
 	protected $settings;
 
-	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
-		add_filter(
-			'plugin_action_links_woo-multi-currency/woo-multi-currency.php', array(
-				$this,
-				'settings_link'
-			)
-		);
+	function __construct() {
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();;
+		add_filter( 'plugin_action_links_woocommerce-multi-currency/woocommerce-multi-currency.php', array(
+			$this,
+			'settings_link'
+		) );
 		add_action( 'init', array( $this, 'init' ) );
 		add_action( 'admin_init', array( $this, 'admin_init' ) );
+		//		add_action( 'admin_notices', array( $this, 'multiple_currency_switcher_plugins_active' ) );
+		//		add_action( 'admin_notices', array( $this, 'cache_plugins_note' ) );
 		add_action( 'admin_menu', array( $this, 'menu_page' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 99 );
 		add_filter( 'woocommerce_general_settings', array( $this, 'woocommerce_general_settings' ) );
+
 	}
+
+	public function multiple_currency_switcher_plugins_active() {
+		global $pagenow;
+		if ( is_plugin_active( 'woocommerce-currency-switcher/index.php' ) || is_plugin_active( 'woocommerce-multicurrency/woocommerce-multicurrency.php' ) || is_plugin_active( 'currency-switcher-woocommerce/currency-switcher-woocommerce.php' ) ) {
+			?>
+            <div class="notice notice-warning">
+                <p>
+					<?php
+					if ( $pagenow === 'plugins.php' ) {
+						echo __( '<strong>WooCommerce Multi Currency:</strong> Some other currency switcher plugins are also active which may cause conflict and may make WooCommerce Multi Currency plugin work incorrectly.', 'woocommerce-multi-currency' );
+					} else {
+						echo __( '<strong>WooCommerce Multi Currency:</strong> Some other currency switcher plugins are also active which may cause conflict and may make WooCommerce Multi Currency plugin work incorrectly, please go to <a target="_blank" href="plugins.php">plugins</a> to deactivate them.', 'woocommerce-multi-currency' );
+					}
+					?>
+                </p>
+            </div>
+			<?php
+		}
+	}
+
+	public function cache_plugins_note() {
+		$page = isset( $_GET['page'] ) ? $_GET['page'] : '';
+		if ( $page != 'woocommerce-multi-currency' ) {
+			return;
+		}
+		if ( is_plugin_active( 'wp-super-cache/wp-cache.php' ) && ! is_plugin_active( 'country-caching-extension-for-wp-super-cache/cc_wpsc_init.php' ) ) { ?>
+            <div class="notice notice-warning">
+                <div class="villatheme-content">
+                    <p>
+						<?php echo __( 'You are using <strong>WP Super Cache</strong>. Please install and active <strong>Country Caching For WP Super Cache</strong> that helps <strong>WooCommerce Multi Currency</strong> is working fine with WP Super Cache.', 'woocommerce-multi-currency' ) ?>
+                    </p>
+                </div>
+            </div>
+		<?php }
+
+		if ( is_plugin_active( 'wp-fastest-cache/wpFastestCache.php' ) ) {
+			if ( defined( 'WPFC_CACHE_QUERYSTRING' ) && WPFC_CACHE_QUERYSTRING ) {
+				return;
+			}
+			?>
+            <div class="notice notice-warning">
+
+                <div class="villatheme-content">
+                    <p>
+						<?php echo __( 'You are using <strong>WP Fastest Cache</strong>. Please make follow these steps these help <strong>WooCommerce Multi Currency</strong> is working fine with WP Fastest Cache.', 'woocommerce-multi-currency' ) ?>
+                    </p>
+                    <ul>
+                        <li><?php echo __( '1. In <strong>WooCommerce → Settings → General → Default customer location</strong> make sure you have selected: <strong>Geolocate with page caching support</strong>', 'woocommerce-multi-currency' ) ?></li>
+                        <li><?php echo __( '2. Open wp-config.php file via FTP then insert <strong>define(\'WPFC_CACHE_QUERYSTRING\', true);</strong>', 'woocommerce-multi-currency' ) ?></li>
+                    </ul>
+
+                </div>
+
+            </div>
+		<?php }
+	}
+
 
 	/**
 	 * Remove currency, decimal, posistion, setting in backend
@@ -42,7 +100,7 @@ class WOOMULTI_CURRENCY_F_Admin_Admin {
 					unset( $datas[ $k ] );
 				}
 				if ( $data['id'] == 'pricing_options' ) {
-					$datas[ $k ]['desc'] = esc_html__( 'The following options affect how prices are displayed on the frontend. Multi Currency for WooCommerce is working. Please go to ', 'woo-multi-currency' ) . '<a href="' . admin_url( '?page=woo-multi-currency' ) . '">' . esc_html__( 'Multi Currency for WooCommerce setting page', 'woo-multi-currency' ) . '</a>' . esc_html__( ' to set default currency.', 'woo-multi-currency' );
+					$datas[ $k ]['desc'] = esc_html__( 'The following options affect how prices are displayed on the frontend. Woo Multi Currency is working. Please go to ', 'woocommerce-multi-currency' ) . '<a href="' . admin_url( '?page=woocommerce-multi-currency' ) . '">' . esc_html__( 'WooCommerce Multi Currency setting page', 'woocommerce-multi-currency' ) . '</a>' . esc_html__( ' to set default currency.', 'woocommerce-multi-currency' );
 				}
 			}
 		}
@@ -52,7 +110,6 @@ class WOOMULTI_CURRENCY_F_Admin_Admin {
 
 	/*Check Auto update*/
 	public function admin_init() {
-
 		$old_data = get_option( 'wmc_selected_currencies', array() );
 		if ( count( $old_data ) ) {
 			$currency         = $currency_rate = $currency_decimals = $currency_custom = $currency_pos = array();
@@ -119,17 +176,29 @@ class WOOMULTI_CURRENCY_F_Admin_Admin {
 		if ( ! wp_doing_ajax() ) {
 			$frontend_call_admin = false;
 			//Fix with Jetpack stats request from frontend
-			if ( isset( $_GET['page'], $_GET['chart'] ) && sanitize_text_field( wp_unslash( $_GET['page'] ) ) === 'stats' && in_array( sanitize_text_field( $_GET['chart'] ), array(
+			if ( isset( $_GET['page'], $_GET['chart'] ) && $_GET['page'] === 'stats' && in_array( $_GET['chart'], array(
 					'admin-bar-hours-scale',
 					'admin-bar-hours-scale-2x'
 				) ) ) {
 				$frontend_call_admin = true;
 			}
-			if ( ! $frontend_call_admin ) {
+			if ( ! $frontend_call_admin && current_user_can( 'manage_woocommerce' ) ) {
 				$current_currency = get_option( 'woocommerce_currency' );
 				$this->settings->set_current_currency( $current_currency );
 			}
 		}
+		//		$params = new WOOMULTI_CURRENCY_Data();
+		$params = WOOMULTI_CURRENCY_Data::get_ins();
+
+		/*Check update*/
+		$key         = $params->get_key();
+		$setting_url = admin_url( '?page=woocommerce-multi-currency' );
+
+		/*new VillaTheme_Plugin_Check_Update ( WOOMULTI_CURRENCY_VERSION,                    // current version
+			'https://villatheme.com/wp-json/downloads/v3',  // update path
+			'woocommerce-multi-currency/woocommerce-multi-currency.php',                  // plugin file slug
+			'woocommerce-multi-currency', '5455', $key, $setting_url );
+		new VillaTheme_Plugin_Updater( 'woocommerce-multi-currency/woocommerce-multi-currency.php', 'woocommerce-multi-currency', $setting_url );*/
 	}
 
 
@@ -137,50 +206,75 @@ class WOOMULTI_CURRENCY_F_Admin_Admin {
 	 * Init Script in Admin
 	 */
 	public function admin_enqueue_scripts() {
-		$page = isset( $_REQUEST['page'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['page'] ) ) : '';
-		if ( $page == 'woo-multi-currency' ) {
+		$page = isset( $_REQUEST['page'] ) ? $_REQUEST['page'] : '';
+		if ( $page == 'woocommerce-multi-currency' ) {
 			global $wp_scripts;
 			$scripts = $wp_scripts->registered;
 			foreach ( $scripts as $k => $script ) {
+				if ( $script->handle == 'query-monitor' ) {
+					continue;
+				}
 				preg_match( '/^\/wp-/i', $script->src, $result );
 				if ( count( array_filter( $result ) ) < 1 ) {
-					if ( $script->handle == 'query-monitor' ) {
-						continue;
-					}
 					wp_dequeue_script( $script->handle );
 				}
 			}
 			wp_dequeue_style( 'eopa-admin-css' );
 			/*Stylesheet*/
-			wp_enqueue_style( 'semantic-ui-button', WOOMULTI_CURRENCY_F_CSS . 'button.min.css' );
-			wp_enqueue_style( 'semantic-ui-table', WOOMULTI_CURRENCY_F_CSS . 'table.min.css' );
-			wp_enqueue_style( 'semantic-ui-transition', WOOMULTI_CURRENCY_F_CSS . 'transition.min.css' );
-			wp_enqueue_style( 'semantic-ui-form', WOOMULTI_CURRENCY_F_CSS . 'form.min.css' );
-			wp_enqueue_style( 'semantic-ui-icon', WOOMULTI_CURRENCY_F_CSS . 'icon.min.css' );
-			wp_enqueue_style( 'semantic-ui-dropdown', WOOMULTI_CURRENCY_F_CSS . 'dropdown.min.css' );
-			wp_enqueue_style( 'semantic-ui-checkbox', WOOMULTI_CURRENCY_F_CSS . 'checkbox.min.css' );
-			wp_enqueue_style( 'semantic-ui-segment', WOOMULTI_CURRENCY_F_CSS . 'segment.min.css' );
-			wp_enqueue_style( 'semantic-ui-menu', WOOMULTI_CURRENCY_F_CSS . 'menu.min.css' );
-			wp_enqueue_style( 'semantic-ui-tab', WOOMULTI_CURRENCY_F_CSS . 'tab.css' );
-			wp_enqueue_style( 'semantic-ui-input', WOOMULTI_CURRENCY_F_CSS . 'input.min.css' );
-			wp_enqueue_style( 'semantic-ui-popup', WOOMULTI_CURRENCY_F_CSS . 'popup.min.css' );
-			wp_enqueue_style( 'semantic-ui-message', WOOMULTI_CURRENCY_F_CSS . 'message.min.css' );
-			wp_enqueue_style( 'woo-multi-currency', WOOMULTI_CURRENCY_F_CSS . 'woo-multi-currency-admin.css' );
-			wp_enqueue_style( 'select2', WOOMULTI_CURRENCY_F_CSS . 'select2.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-button', WOOMULTI_CURRENCY_CSS . 'button.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-table', WOOMULTI_CURRENCY_CSS . 'table.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-transition', WOOMULTI_CURRENCY_CSS . 'transition.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-form', WOOMULTI_CURRENCY_CSS . 'form.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-icon', WOOMULTI_CURRENCY_CSS . 'icon.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-dropdown', WOOMULTI_CURRENCY_CSS . 'dropdown.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-checkbox', WOOMULTI_CURRENCY_CSS . 'checkbox.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-segment', WOOMULTI_CURRENCY_CSS . 'segment.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-menu', WOOMULTI_CURRENCY_CSS . 'menu.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-tab', WOOMULTI_CURRENCY_CSS . 'tab.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-input', WOOMULTI_CURRENCY_CSS . 'input.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-popup', WOOMULTI_CURRENCY_CSS . 'popup.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-message', WOOMULTI_CURRENCY_CSS . 'message.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-accordion', WOOMULTI_CURRENCY_CSS . 'accordion.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency-progress', WOOMULTI_CURRENCY_CSS . 'progress.min.css' );
+			wp_enqueue_style( 'woocommerce-multi-currency', WOOMULTI_CURRENCY_CSS . 'woocommerce-multi-currency-admin.css', '', WOOMULTI_CURRENCY_VERSION );
+			wp_enqueue_style( 'select2', WOOMULTI_CURRENCY_CSS . 'select2.min.css' );
 
 			wp_enqueue_script( 'select2' );
-			wp_enqueue_script( 'semantic-ui-transition', WOOMULTI_CURRENCY_F_JS . 'transition.min.js', array( 'jquery' ) );
-			wp_enqueue_script( 'semantic-ui-dropdown', WOOMULTI_CURRENCY_F_JS . 'dropdown.js', array( 'jquery' ) );
-			wp_enqueue_script( 'semantic-ui-checkbox', WOOMULTI_CURRENCY_F_JS . 'checkbox.js', array( 'jquery' ) );
-			wp_enqueue_script( 'semantic-ui-tab', WOOMULTI_CURRENCY_F_JS . 'tab.js', array( 'jquery' ) );
-			wp_enqueue_script( 'woo-multi-currency-address', WOOMULTI_CURRENCY_F_JS . 'jquery.address-1.6.min.js', array( 'jquery' ) );
+			wp_enqueue_script( 'woocommerce-multi-currency-transition', WOOMULTI_CURRENCY_JS . 'transition.min.js', array( 'jquery' ) );
+			wp_enqueue_script( 'woocommerce-multi-currency-dropdown', WOOMULTI_CURRENCY_JS . 'dropdown.js', array( 'jquery' ) );
+			wp_enqueue_script( 'woocommerce-multi-currency-checkbox', WOOMULTI_CURRENCY_JS . 'checkbox.js', array( 'jquery' ) );
+			wp_enqueue_script( 'woocommerce-multi-currency-tab', WOOMULTI_CURRENCY_JS . 'tab.js', array( 'jquery' ) );
+			wp_enqueue_script( 'woocommerce-multi-currency-accordion', WOOMULTI_CURRENCY_JS . 'accordion.min.js', array( 'jquery' ) );
+			wp_enqueue_script( 'woocommerce-multi-currency-progress', WOOMULTI_CURRENCY_JS . 'progress.min.js', array( 'jquery' ) );
+			wp_enqueue_script( 'woocommerce-multi-currency-address', WOOMULTI_CURRENCY_JS . 'jquery.address-1.6.min.js', array( 'jquery' ) );
 			wp_enqueue_script( 'jquery-ui-sortable' );
-			wp_enqueue_script( 'woo-multi-currency', WOOMULTI_CURRENCY_F_JS . 'woo-multi-currency-admin.js', array( 'jquery' ), WOOMULTI_CURRENCY_F_VERSION );
-			/*Color picker*/
-			wp_enqueue_script( 'iris' );
+			wp_enqueue_script( 'woocommerce-multi-currency', WOOMULTI_CURRENCY_JS . 'woocommerce-multi-currency-admin.js', array( 'jquery' ), WOOMULTI_CURRENCY_VERSION );
 
-			wp_localize_script( 'woo-multi-currency', 'wmcParams', [ 'nonce' => wp_create_nonce( 'wmc_ajax_nonce' ) ] );
+			/*Color picker*/
+			wp_enqueue_script( 'iris', admin_url( 'js/iris.min.js' ), array(
+				'jquery-ui-draggable',
+				'jquery-ui-slider',
+				'jquery-touch-punch'
+			), false, 1 );
+
+			//			wp_localize_script( 'woocommerce-multi-currency', 'selectData', array( 'results' => $this->convert_woocommerce_currencies() ) );
+
 		}
+
+	}
+
+
+	public function convert_woocommerce_currencies() {
+		$wc_currencies = get_woocommerce_currencies();
+		$new_list      = array();
+		foreach ( $wc_currencies as $currency_code => $name ) {
+			$new_list[] = array(
+				'id'   => $currency_code,
+				'text' => $currency_code . '-' . $name . ' (' . get_woocommerce_currency_symbol( $currency_code ) . ')'
+			);
+		}
+
+		return $new_list;
 	}
 
 	/**
@@ -191,7 +285,7 @@ class WOOMULTI_CURRENCY_F_Admin_Admin {
 	 * @return mixed
 	 */
 	public function settings_link( $links ) {
-		$settings_link = '<a href="admin.php?page=woo-multi-currency" title="' . esc_html__( 'Settings', 'woo-multi-currency' ) . '">' . esc_html__( 'Settings', 'woo-multi-currency' ) . '</a>';
+		$settings_link = '<a href="admin.php?page=woocommerce-multi-currency" title="' . __( 'Settings', 'woocommerce-multi-currency' ) . '">' . __( 'Settings', 'woocommerce-multi-currency' ) . '</a>';
 		array_unshift( $links, $settings_link );
 
 		return $links;
@@ -201,11 +295,23 @@ class WOOMULTI_CURRENCY_F_Admin_Admin {
 	/**
 	 * Function init when run plugin+
 	 */
-	function init() {
-		/*Register post type*/
-
-//		load_plugin_textdomain( 'woo-multi-currency' );
+	public function init() {
+		load_plugin_textdomain( 'woocommerce-multi-currency' );
 		$this->load_plugin_textdomain();
+		/*if ( class_exists( 'VillaTheme_Support_Pro' ) ) {
+			new VillaTheme_Support_Pro(
+				array(
+					'support'   => 'https://villatheme.com/supports/forum/plugins/woo-multi-currency/',
+					'docs'      => 'http://docs.villatheme.com/?item=woocommerce-multi-currency',
+					'review'    => 'https://codecanyon.net/downloads',
+					'css'       => WOOMULTI_CURRENCY_CSS,
+					'image'     => WOOMULTI_CURRENCY_IMAGES,
+					'slug'      => 'woocommerce-multi-currency',
+					'menu_slug' => 'woocommerce-multi-currency',
+					'version'   => WOOMULTI_CURRENCY_VERSION,
+				)
+			);
+		}*/
 	}
 
 
@@ -213,28 +319,21 @@ class WOOMULTI_CURRENCY_F_Admin_Admin {
 	 * load Language translate
 	 */
 	public function load_plugin_textdomain() {
-		$locale   = apply_filters( 'plugin_locale', get_locale(), 'woo-multi-currency' );
-		$basename = 'woo-multi-currency';
-		unload_textdomain( 'woo-multi-currency' );
-
+		$locale = apply_filters( 'plugin_locale', get_locale(), 'woocommerce-multi-currency' );
 		// Global + Frontend Locale
-		load_textdomain( 'woo-multi-currency', WP_LANG_DIR . "/{$basename}/{$basename}-{$locale}.mo" );
-		load_plugin_textdomain( 'woo-multi-currency', false, $basename . '/languages' );
+		load_textdomain( 'woocommerce-multi-currency', WOOMULTI_CURRENCY_LANGUAGES . "woocommerce-multi-currency-$locale.mo" );
+		load_plugin_textdomain( 'woocommerce-multi-currency', false, WOOMULTI_CURRENCY_LANGUAGES );
 	}
 
 	/**
 	 * Register a custom menu page.
 	 */
 	public function menu_page() {
-		add_menu_page(
-			esc_html__( 'Multi Currency for WooCommerce by Artslab', 'woo-multi-currency' ), esc_html__( 'Multi Currency', 'woo-multi-currency' ), 'manage_woocommerce', 'woo-multi-currency', array(
-			'WOOMULTI_CURRENCY_F_Admin_Settings',
+		add_menu_page( esc_html__( 'WooCommerce Multi Currency', 'woocommerce-multi-currency' ), esc_html__( 'Multi Currency', 'woocommerce-multi-currency' ), 'manage_woocommerce', 'woocommerce-multi-currency', array(
+			'WOOMULTI_CURRENCY_Admin_Settings',
 			'page_callback'
-		), WOOMULTI_CURRENCY_F_IMAGES . 'icon.svg', 2
-		);
+		), WOOMULTI_CURRENCY_IMAGES . 'icon.svg', 2 );
 
 	}
 
 }
-
-?>

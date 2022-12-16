@@ -1,17 +1,17 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_Woocommerce_Appointments
+ * Class WOOMULTI_CURRENCY_Plugin_Woocommerce_Appointments
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_Woocommerce_Appointments {
+class WOOMULTI_CURRENCY_Plugin_Woocommerce_Appointments {
 	protected static $settings;
 
 	public function __construct() {
-		self::$settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		self::$settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( is_plugin_active( 'woocommerce-appointments/woocommerce-appointments.php' ) ) {
 			add_filter( 'wc_appointments_adjust_addon_cost', array(
 				$this,

@@ -1,13 +1,13 @@
 <?php
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_Yith_Dynamic_Pricing_And_Discount
+ * Class WOOMULTI_CURRENCY_Plugin_Yith_Dynamic_Pricing_And_Discount
  * Author: Yith
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_Yith_Dynamic_Pricing_And_Discount {
+class WOOMULTI_CURRENCY_Plugin_Yith_Dynamic_Pricing_And_Discount {
 	public function __construct() {
 		add_filter( 'ywdpd_change_dynamic_price', array( $this, 'ywdpd_change_dynamic_price' ) );
 //		add_filter( 'ywdpd_maybe_should_be_converted', array( $this, 'ywdpd_maybe_should_be_converted' ) );

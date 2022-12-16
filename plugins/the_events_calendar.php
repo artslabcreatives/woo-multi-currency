@@ -1,18 +1,18 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_The_Events_Calendar
+ * Class WOOMULTI_CURRENCY_Plugin_The_Events_Calendar
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_The_Events_Calendar {
+class WOOMULTI_CURRENCY_Plugin_The_Events_Calendar {
 	protected $settings;
 
 	public function __construct() {
-
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+//		$this->settings = new WOOMULTI_CURRENCY_Data();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			add_filter( 'tribe_get_cost', array( $this, 'tribe_get_cost' ), 10, 3 );
 		}

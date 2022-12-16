@@ -5,16 +5,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class WOOMULTI_CURRENCY_F_Frontend_Location
+ * Class WOOMULTI_CURRENCY_Frontend_Location
  */
-class WOOMULTI_CURRENCY_F_Frontend_Location {
+class WOOMULTI_CURRENCY_Frontend_Location {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			/*Check change currency. Can not code in init function because Widget price can not get symbol.*/
 			$list_currencies = $this->settings->get_list_currencies();
+			if ( $this->settings->use_session() ) {
+				add_action( 'wp_ajax_wmc_currency_switcher', array( $this, 'currency_switcher' ) );
+				add_action( 'wp_ajax_nopriv_wmc_currency_switcher', array( $this, 'currency_switcher' ) );
+			}
 			if ( isset( $_GET['wmc-currency'] ) ) {
 				$target_currency = str_replace( '/', '', sanitize_text_field( $_GET['wmc-currency'] ) );
 				if ( ! empty( $list_currencies[ $target_currency ] ) ) {
@@ -27,12 +31,34 @@ class WOOMULTI_CURRENCY_F_Frontend_Location {
 		}
 	}
 
+
+	/**
+	 * Currency switcher via Ajax
+	 */
+	public function currency_switcher() {
+		$list_currencies = $this->settings->get_list_currencies();
+		if ( isset( $_GET['wmc-currency'] ) ) {
+			$target_currency = str_replace( '/', '', sanitize_text_field( $_GET['wmc-currency'] ) );
+			if ( ! empty( $list_currencies[ $target_currency ] ) ) {
+				if ( $list_currencies[ $target_currency ]['hide'] !== '1' ) {
+					$this->settings->set_current_currency( $target_currency );
+					echo esc_html__( 'Currency changed', 'woocommerce-multi-currency' );
+				}
+			}
+		}
+		wp_die();
+	}
+
 	public function init() {
 		if ( is_admin() && ! wp_doing_ajax() ) {
 			return;
 		}
+
 		$action = isset( $_GET['action'] ) ? sanitize_text_field( $_GET['action'] ) : '';
 		if ( $action === 'wc_facebook_background_product_sync' ) {
+			return;
+		}
+		if ( apply_filters( 'wmc_ignore_auto_select_currency', false ) ) {
 			return;
 		}
 		$auto_detect = $this->settings->get_auto_detect();
@@ -74,7 +100,7 @@ class WOOMULTI_CURRENCY_F_Frontend_Location {
 					}
 				}
 				/*Do not run if a request is rest api or cron*/
-				if ( WOOMULTI_CURRENCY_F_Data::is_request_to_rest_api() || ! empty( $_REQUEST['doing_wp_cron'] ) ) {
+				if ( WOOMULTI_CURRENCY_Data::is_request_to_rest_api() || ! empty( $_REQUEST['doing_wp_cron'] ) ) {
 					return;
 				}
 				$detect_ip_currency = $this->detect_ip_currency();
@@ -119,6 +145,32 @@ class WOOMULTI_CURRENCY_F_Frontend_Location {
 					$this->settings->setcookie( 'wmc_currency_symbol', $detect_ip_currency['currency_symbol'], time() + 86400 );
 				}
 				break;
+
+			case 3:
+				if ( $this->settings->getcookie( 'wmc_current_currency' ) ) {
+					return;
+				} else {
+					if ( class_exists( 'Polylang' ) && ! is_checkout() && ! is_cart() && function_exists( 'pll_current_language' ) ) {
+						$detect_lang   = pll_current_language();
+						$currency_code = $this->settings->get_currency_by_language( $detect_lang );
+						if ( $currency_code ) {
+							$this->settings->set_current_currency( $currency_code );
+						}
+					}
+				}
+				break;
+			case 4:
+				if ( class_exists( 'TRP_Translate_Press' ) ) {
+					$lang             = get_locale();
+					$trp_currencies   = $this->settings->get_params( 'translatepress' );
+					$current_currency = $this->settings->get_current_currency();
+					if ( ! empty( $trp_currencies[ $lang ] ) && $current_currency !== $trp_currencies[ $lang ] ) {
+						$this->settings->set_current_currency( $trp_currencies[ $lang ] );
+					}
+
+					add_filter( 'trp_get_url_for_language', [ $this, 'translatepress_set_change_currency_query' ], 10, 3 );
+				}
+				break;
 			default:
 
 		}
@@ -135,23 +187,19 @@ class WOOMULTI_CURRENCY_F_Frontend_Location {
 				case 1:
 					$ip_add = $this->get_ip();
 					$this->settings->setcookie( 'wmc_ip_add', $ip_add, time() + 86400 );
-					if ( ! class_exists( 'geoPlugin' ) ) {
-						require_once WOOMULTI_CURRENCY_F_INCLUDES . 'geoplugin.class.php';
-					}
-					$geo_plugin = new geoPlugin();
-					$geoplugin  = $geo_plugin->fetch( "http://www.geoplugin.net/php.gp?ip={$ip_add}&base_currency=" . $this->settings->get_default_currency() );
+
+					@$geoplugin = file_get_contents( 'http://www.geoplugin.net/php.gp?ip=' . $ip_add );
+//				@$geoplugin = file_get_contents( 'https://www.geoplugin.com/geodata.php?ip=' . $ip_add );
 
 					if ( $geoplugin ) {
-						$geoplugin = unserialize( $geoplugin );
+						$geoplugin_arg = unserialize( $geoplugin );
 					}
 
+
 					$geoplugin_arg = array(
-						'country'       => isset( $geoplugin['geoplugin_countryCode'] ) ? $geoplugin['geoplugin_countryCode'] : 'US',
-						'currency_code' => isset( $geoplugin['geoplugin_currencyCode'] ) ? $geoplugin['geoplugin_currencyCode'] : 'USD',
+						'country'       => isset( $geoplugin_arg['geoplugin_countryCode'] ) ? $geoplugin_arg['geoplugin_countryCode'] : 'US',
+						'currency_code' => isset( $geoplugin_arg['geoplugin_currencyCode'] ) ? $geoplugin_arg['geoplugin_currencyCode'] : 'USD',
 					);
-					if ( ! empty( $geoplugin['geoplugin_currencyConverter'] ) ) {
-						$geoplugin_arg['currency_rate'] = $geoplugin['geoplugin_currencyConverter'];
-					}
 					break;
 				case 2:
 					$country_code  = self::get_country_code_from_headers();
@@ -206,7 +254,7 @@ class WOOMULTI_CURRENCY_F_Frontend_Location {
 			$main_currency     = $this->settings->get_default_currency();
 			$list_currencies   = $this->settings->get_list_currencies();
 			$currency_detected = '';
-			if ( $this->settings->get_enable_currency_by_country() ) {
+			if ( apply_filters( 'wmc_approximate_price_currency_by_country', $this->settings->get_enable_currency_by_country() ) ) {
 				foreach ( $currencies as $currency ) {
 					$data = $this->settings->get_currency_by_countries( $currency );
 					if ( in_array( $country_code, $data ) ) {
@@ -244,6 +292,7 @@ class WOOMULTI_CURRENCY_F_Frontend_Location {
 				} else {
 					return array();
 				}
+
 			}
 
 		} else {
@@ -258,21 +307,21 @@ class WOOMULTI_CURRENCY_F_Frontend_Location {
 	protected function get_ip() {
 		if ( defined( 'WOO_MULTI_CURRENCY_CUSTOM_IP' ) ) {
 			if ( isset( $_SERVER[ WOO_MULTI_CURRENCY_CUSTOM_IP ] ) ) {
-				return sanitize_text_field( wp_unslash( $_SERVER[ WOO_MULTI_CURRENCY_CUSTOM_IP ] ) );
+				return $_SERVER[ WOO_MULTI_CURRENCY_CUSTOM_IP ];
 			}
 		}
 		if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
-			$ipaddress = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+			$ipaddress = $_SERVER['REMOTE_ADDR'];
 		} else if ( isset( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-			$ipaddress = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
+			$ipaddress = $_SERVER['HTTP_CLIENT_IP'];
 		} else if ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$ipaddress = self::validate_server_ip( $_SERVER['HTTP_X_FORWARDED_FOR'] );
+			$ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
 		} else if ( isset( $_SERVER['HTTP_X_FORWARDED'] ) ) {
-			$ipaddress = self::validate_server_ip( $_SERVER['HTTP_X_FORWARDED'] );
+			$ipaddress = $_SERVER['HTTP_X_FORWARDED'];
 		} else if ( isset( $_SERVER['HTTP_FORWARDED_FOR'] ) ) {
-			$ipaddress = self::validate_server_ip( $_SERVER['HTTP_FORWARDED_FOR'] );
+			$ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
 		} else if ( isset( $_SERVER['HTTP_FORWARDED'] ) ) {
-			$ipaddress = self::validate_server_ip( $_SERVER['HTTP_FORWARDED'] );
+			$ipaddress = $_SERVER['HTTP_FORWARDED'];
 		} else {
 			$ipaddress = 'UNKNOWN';
 		}
@@ -280,25 +329,10 @@ class WOOMULTI_CURRENCY_F_Frontend_Location {
 		return $ipaddress;
 	}
 
-	/**
-	 * @param $ip
-	 *
-	 * @return string
-	 */
-	private static function validate_server_ip( $ip ) {
-		return (string) rest_is_ip_address( trim( current( preg_split( '/,/', sanitize_text_field( wp_unslash( $ip ) ) ) ) ) );
-	}
-
 	private static function get_country_code_from_headers() {
 		$country_code = '';
 
-		$headers = array(
-			'HTTP_GEOIP_COUNTRY_CODE',
-			'GEOIP_COUNTRY_CODE',
-			'HTTP_CF_IPCOUNTRY',
-			'MM_COUNTRY_CODE',
-			'HTTP_X_COUNTRY_CODE',
-		);
+		$headers = WOOMULTI_CURRENCY_Data::country_code_key_from_headers();
 
 		foreach ( $headers as $header ) {
 			if ( ! empty( $_SERVER[ $header ] ) ) {
@@ -308,5 +342,15 @@ class WOOMULTI_CURRENCY_F_Frontend_Location {
 		}
 
 		return $country_code;
+	}
+
+	public function translatepress_set_change_currency_query( $new_url, $url, $language ) {
+		$trp_currencies = $this->settings->get_params( 'translatepress' );
+
+		if ( ! empty( $trp_currencies[ $language ] ) ) {
+			$new_url = add_query_arg( [ 'wmc-currency' => $trp_currencies[ $language ] ], $new_url );
+		}
+
+		return $new_url;
 	}
 }

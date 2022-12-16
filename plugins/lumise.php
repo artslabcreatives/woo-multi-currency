@@ -1,18 +1,18 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_Lumise
+ * Class WOOMULTI_CURRENCY_Plugin_Lumise
  * Plugin: Lumise
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_Lumise {
+class WOOMULTI_CURRENCY_Plugin_Lumise {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() && is_plugin_active( 'lumise/lumise.php' ) ) {
 			add_filter( 'lumise_product_base_price', array( $this, 'lumise_product_base_price' ), 20, 2 );
 			add_filter( 'woocommerce_widget_cart_item_quantity', array(

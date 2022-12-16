@@ -1,17 +1,17 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_Woocommerce_Product_Addons
+ * Integrate with WooCommerce Product Add-ons from WooCommerce
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_Woocommerce_Product_Addons {
+class WOOMULTI_CURRENCY_Plugin_Woocommerce_Product_Addons {
 	protected static $settings;
 
 	public function __construct() {
-		self::$settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		self::$settings = WOOMULTI_CURRENCY_Data::get_ins();
 		add_filter( 'woocommerce_product_addons_price_raw', array(
 			$this,
 			'woocommerce_product_addons_price_raw'

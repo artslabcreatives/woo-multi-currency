@@ -1,17 +1,17 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_Catna
+ * Class WOOMULTI_CURRENCY_Plugin_Catna
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_Catna {
+class WOOMULTI_CURRENCY_Plugin_Catna {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		/*Name your price*/
 		add_action( 'vicatna_nyp_admin_product_after_name_your_price', array(
 			$this,

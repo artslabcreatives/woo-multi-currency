@@ -7,20 +7,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * WPC Product Bundles by WPClever
  *
- * Class WOOMULTI_CURRENCY_F_Plugin_Woo_Product_Bundle
+ * Class WOOMULTI_CURRENCY_Plugin_Woo_Product_Bundle
  */
-class WOOMULTI_CURRENCY_F_Plugin_Woo_Product_Bundle {
+class WOOMULTI_CURRENCY_Plugin_Woo_Product_Bundle {
 	protected $settings;
 	protected static $end_ob;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() && is_plugin_active( 'woo-product-bundle/wpc-product-bundles.php' ) ) {
 			add_action( 'woocommerce_add_to_cart', array( $this, 'before_add_to_cart' ), 1 );
 			add_action( 'wp_enqueue_scripts', array( $this, 'after_add_to_cart' ), - 1 );
 			add_action( 'woosb_before_table', array( $this, 'woosb_before_table' ) );
 			add_action( 'woosb_before_table', array( $this, 'woosb_before_table' ) );
-			add_action( 'woosb_after_table', array( $this, 'woosb_after_table' ) );
 			add_filter( 'woocommerce_cart_item_price', array( $this, 'woosb_cart_item_price' ), 20, 2 );
 			add_filter( 'woocommerce_cart_item_subtotal', array( $this, 'woosb_cart_item_subtotal' ), 20, 2 );
 			add_filter( 'woocommerce_get_price_html', array( $this, 'woosb_get_price_html' ), 199, 2 );
@@ -39,17 +38,23 @@ class WOOMULTI_CURRENCY_F_Plugin_Woo_Product_Bundle {
 		if ( self::$end_ob ) {
 			$discount_amount = $product->get_discount_amount();
 			$html            = ob_get_clean();
-			echo str_replace( 'data-discount-amount="' . esc_attr( $discount_amount ) . '"', 'data-discount-amount="' . esc_attr( wmc_get_price( $discount_amount ) ) . '"', $html );
+			echo str_replace( 'data-discount-amount="' . $discount_amount . '"', 'data-discount-amount="' . wmc_get_price( $discount_amount ) . '"', $html );
 			self::$end_ob = false;
 		}
 	}
 
+	/**
+	 * @param $price
+	 * @param $product WC_Product
+	 *
+	 * @return int|mixed|string|void
+	 */
 	public function woosb_get_price_html( $price, $product ) {
 		if ( $this->settings->get_current_currency() === $this->settings->get_default_currency() ) {
 			return $price;
 		}
 		if ( $product->is_type( 'woosb' ) && ( $items = $product->get_items() ) ) {
-			$product_id   = $product->get_id();
+			$product_id = $product->get_id();
 			$custom_price = stripslashes( get_post_meta( $product_id, 'woosb_custom_price', true ) );
 
 			if ( ! empty( $custom_price ) ) {

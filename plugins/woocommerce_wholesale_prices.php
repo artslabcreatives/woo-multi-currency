@@ -1,24 +1,21 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_Woocommerce_Wholesale_Prices
+ * Class WOOMULTI_CURRENCY_Plugin_Woocommerce_Wholesale_Prices
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 if ( is_plugin_active( 'woocommerce-wholesale-prices/woocommerce-wholesale-prices.bootstrap.php' ) ) {
-	class WOOMULTI_CURRENCY_F_Plugin_Woocommerce_Wholesale_Prices {
+	class WOOMULTI_CURRENCY_Plugin_Woocommerce_Wholesale_Prices {
 		protected $settings;
-
 		public function __construct() {
-			$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
-
+			$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 			add_action( 'woocommerce_product_options_pricing', array( $this, 'add_wholesale_price_fields' ), 12 );
 			add_action( 'woocommerce_process_product_meta_simple', array(
 				$this,
 				'save_wholesale_price_fields'
 			), 10, 1 );
-
 			add_action( 'woocommerce_product_after_variable_attributes', array(
 				$this,
 				'add_wholesale_price_fields_variable'
@@ -27,7 +24,6 @@ if ( is_plugin_active( 'woocommerce-wholesale-prices/woocommerce-wholesale-price
 				$this,
 				'save_wholesale_price_fields_variable'
 			), 10, 2 );
-
 			if ( $this->settings->get_enable() ) {
 				add_filter( 'wwp_pass_wholesale_price_through_taxing', array(
 					$this,
@@ -40,13 +36,15 @@ if ( is_plugin_active( 'woocommerce-wholesale-prices/woocommerce-wholesale-price
 			}
 		}
 
+		/**
+		 * @param $post_id
+		 */
 		public function save_wholesale_price_fields( $post_id ) {
-			/*Check Permission*/
-			if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			if ( ! current_user_can( 'manage_options' ) ) {
 				return;
 			}
 			/*Check send from product edit page*/
-			if ( ! isset( $_POST['_wmc_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wmc_nonce'] ) ), 'wmc_save_simple_product_currency' ) ) {
+			if ( ! isset( $_POST['_wmc_nonce'] ) || ! wp_verify_nonce( $_POST['_wmc_nonce'], 'wmc_save_simple_product_currency' ) ) {
 				return;
 			}
 
@@ -56,10 +54,13 @@ if ( is_plugin_active( 'woocommerce-wholesale-prices/woocommerce-wholesale-price
 			}
 		}
 
-
+		/**
+		 * @param $loop
+		 * @param $variation_data
+		 * @param $variation
+		 */
 		public function add_wholesale_price_fields_variable( $loop, $variation_data, $variation ) {
 			$currencies = $this->settings->get_list_currencies();
-
 			$wholesale_roles_obj = new WWP_Wholesale_Roles();
 			$all_wholesale_roles = $wholesale_roles_obj->getAllRegisteredWholesaleRoles();
 			$wholesale_prices    = json_decode( get_post_meta( $variation->ID, '_wholesale_prices_wmcp', true ), true );
@@ -74,8 +75,8 @@ if ( is_plugin_active( 'woocommerce-wholesale-prices/woocommerce-wholesale-price
                          style="border-top: 1px solid #EEEEEE;">
 
                         <header>
-                            <h4 style="padding-bottom: 10px;"><?php esc_html_e( 'Wholesale Prices', 'woocommerce-wholesale-prices' );
-								echo esc_html( "($key)" ); ?></h4>
+                            <h4 style="padding-bottom: 10px;"><?php _e( 'Wholesale Prices', 'woocommerce-wholesale-prices' );
+								echo "($key)"; ?></h4>
                         </header>
 
 						<?php foreach ( $all_wholesale_roles as $role_key => $role ) {
@@ -112,14 +113,16 @@ if ( is_plugin_active( 'woocommerce-wholesale-prices/woocommerce-wholesale-price
 			}
 		}
 
+		/**
+		 * @param $variation_id
+		 * @param $i
+		 */
 		public function save_wholesale_price_fields_variable( $variation_id, $i ) {
-
-			/*Check Permission*/
-			if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			if ( ! current_user_can( 'manage_options' ) ) {
 				return;
 			}
 			/*Check send from product edit page*/
-			if ( ! isset( $_POST['_wmc_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wmc_nonce'] ) ), 'wmc_save_variable_product_currency' ) ) {
+			if ( ! isset( $_POST['_wmc_nonce'] ) || ! wp_verify_nonce( $_POST['_wmc_nonce'], 'wmc_save_variable_product_currency' ) ) {
 				return;
 			}
 
@@ -129,8 +132,10 @@ if ( is_plugin_active( 'woocommerce-wholesale-prices/woocommerce-wholesale-price
 			}
 		}
 
+		/**
+		 * @param string $product_type
+		 */
 		public function add_wholesale_price_fields( $product_type = 'simple' ) {
-
 			global $post;
 			$product_id = $post->ID;
 			$product    = wc_get_product( $product_id );
@@ -153,8 +158,8 @@ if ( is_plugin_active( 'woocommerce-wholesale-prices/woocommerce-wholesale-price
                          style="border-top: 1px solid #EEEEEE;">
 
                         <header>
-                            <h3 style="padding-bottom: 10px;"><?php esc_html_e( 'Wholesale Prices', 'woocommerce-wholesale-prices' );
-								echo esc_html( "($key)" ); ?></h3>
+                            <h3 style="padding-bottom: 10px;"><?php _e( 'Wholesale Prices', 'woocommerce-wholesale-prices' );
+								echo "($key)"; ?></h3>
                         </header>
 
 						<?php foreach ( $all_wholesale_roles as $role_key => $role ) {
@@ -194,8 +199,11 @@ if ( is_plugin_active( 'woocommerce-wholesale-prices/woocommerce-wholesale-price
 		}
 
 		/**
-		 * Integrate with WooCommerce Wholesales Prices
-		 * @return bool
+		 * @param $wholesale_price
+		 * @param $product_id
+		 * @param $user_wholesale_role
+		 *
+		 * @return float|int|mixed
 		 */
 		public function wwp_pass_wholesale_price_through_taxing( $wholesale_price, $product_id, $user_wholesale_role ) {
 
@@ -203,24 +211,22 @@ if ( is_plugin_active( 'woocommerce-wholesale-prices/woocommerce-wholesale-price
 				return $wholesale_price;
 			}
 			if ( $this->settings->check_fixed_price() ) {
-				$currenct_currency = $this->settings->get_current_currency();
-				if ( $currenct_currency != $this->settings->get_default_currency() ) {
+				$current_currency = $this->settings->get_current_currency();
+				if ( $current_currency != $this->settings->get_default_currency() ) {
 					$wholesale_prices = json_decode( get_post_meta( $product_id, '_wholesale_prices_wmcp', true ), true );
 					if ( is_array( $user_wholesale_role ) && count( $user_wholesale_role ) ) {
 						foreach ( $user_wholesale_role as $key => $value ) {
-							if ( isset( $wholesale_prices[ $currenct_currency ][ $value ] ) && $wholesale_prices[ $currenct_currency ][ $value ] > 0 ) {
-								$wholesale_price = $wholesale_prices[ $currenct_currency ][ $value ];
+							if ( isset( $wholesale_prices[ $current_currency ][ $value ] ) && $wholesale_prices[ $current_currency ][ $value ] > 0 ) {
+								$wholesale_price = $wholesale_prices[ $current_currency ][ $value ];
 							} else {
 								$wholesale_price = wmc_get_price( $wholesale_price );
 							}
 						}
 					}
 				}
-
 			} else {
 				$wholesale_price = wmc_get_price( $wholesale_price );
 			}
-
 
 			return $wholesale_price;
 		}
@@ -231,13 +237,13 @@ if ( is_plugin_active( 'woocommerce-wholesale-prices/woocommerce-wholesale-price
 				return $wholesale_price;
 			}
 			if ( $this->settings->check_fixed_price() ) {
-				$currenct_currency = $this->settings->get_current_currency();
-				if ( $currenct_currency != $this->settings->get_default_currency() ) {
+				$current_currency = $this->settings->get_current_currency();
+				if ( $current_currency != $this->settings->get_default_currency() ) {
 					$wholesale_prices = json_decode( get_post_meta( $product_id, '_wholesale_prices_wmcp', true ), true );
 					if ( is_array( $user_wholesale_role ) && count( $user_wholesale_role ) ) {
 						foreach ( $user_wholesale_role as $key => $value ) {
-							if ( isset( $wholesale_prices[ $currenct_currency ][ $value ] ) && $wholesale_prices[ $currenct_currency ][ $value ] > 0 ) {
-								$wholesale_price = $wholesale_prices[ $currenct_currency ][ $value ] / $this->settings->get_list_currencies()[ $this->settings->get_current_currency() ]['rate'];;
+							if ( isset( $wholesale_prices[ $current_currency ][ $value ] ) && $wholesale_prices[ $current_currency ][ $value ] > 0 ) {
+								$wholesale_price = $wholesale_prices[ $current_currency ][ $value ] / $this->settings->get_list_currencies()[ $this->settings->get_current_currency() ]['rate'];;
 							}
 						}
 					}

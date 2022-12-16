@@ -1,17 +1,17 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Frontend_Symbol
+ * Class WOOMULTI_CURRENCY_Frontend_Symbol
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Frontend_Symbol {
+class WOOMULTI_CURRENCY_Frontend_Symbol {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			/*Add order information*/
 			add_filter( 'woocommerce_thankyou_order_id', array( $this, 'add_order_currency_info' ), 9 );
@@ -20,20 +20,23 @@ class WOOMULTI_CURRENCY_F_Frontend_Symbol {
 			/**
 			 * Format price
 			 */
-			add_filter( 'wc_get_price_decimals', array( $this, 'set_decimals' ) );
+			add_filter( 'wc_get_price_decimals', array( $this, 'set_decimals' ),PHP_INT_MAX );
 			/**
 			 * Symbol position
 			 */
 			add_filter( 'woocommerce_price_format', array( $this, 'price_format' ) );
-			add_filter( 'woocommerce_currency_symbol', array( $this, 'custom_currency_symbol' ), 11, 2 );
-
+			add_filter( 'woocommerce_currency_symbol', array( $this, 'custom_currency_symbol' ), 10002, 2 );
+			add_action( 'woocommerce_my_account_my_orders_column_order-total', array(
+				$this,
+				'my_account_page_orders'
+			) );
 			/*Custom Symbol*/
 			add_action( 'init', array( $this, 'init' ), 1 );
 		}
 	}
 
 	/**
-	 *
+	 * Call wc_price filter here so that WC_VERSION has been defined
 	 */
 	public function init() {
 		if ( version_compare( WC_VERSION, '5.0', '<' ) ) {
@@ -41,6 +44,68 @@ class WOOMULTI_CURRENCY_F_Frontend_Symbol {
 		} else {
 			add_filter( 'wc_price', array( $this, 'custom_price_5' ), 10, 5 );
 		}
+	}
+
+	/**
+	 * @param $order WC_Order
+	 */
+	public function my_account_page_orders( $order ) {
+		$id             = $order->get_id();
+		$total          = $order->get_total();
+		$item_count     = $order->get_item_count();
+		$checkout_curr  = $order->get_currency();
+		$symbol         = array();
+		$wmc_order_info = get_post_meta( $id, 'wmc_order_info', true );
+		if ( $wmc_order_info ) {
+			foreach ( $wmc_order_info as $key => $value ) {
+				if ( $key == $checkout_curr ) {
+					$symbol['currency'] = $key;
+					$symbol['custom']   = $value['custom'];
+				}
+			}
+		} else {
+			$symbol['custom']   = '';
+			$symbol['currency'] = $checkout_curr;
+		}
+		$total = $this->wmc_wc_price_order( $total, $symbol );
+		printf( _n( '%1$s for %2$s item', '%1$s for %2$s items', $item_count, 'woocommerce' ), $total, $item_count );
+	}
+
+	public function wmc_wc_price_order( $price, $symbol, $args = array() ) {
+		$args = apply_filters(
+			'wc_price_args',
+			wp_parse_args(
+				$args,
+				array(
+					'ex_tax_label'       => false,
+					'currency'           => '',
+					'decimal_separator'  => wc_get_price_decimal_separator(),
+					'thousand_separator' => wc_get_price_thousand_separator(),
+					'decimals'           => wc_get_price_decimals(),
+					'price_format'       => get_woocommerce_price_format(),
+				)
+			)
+		);
+
+		$display_symbol = $symbol['custom'] ? $symbol['custom'] : get_woocommerce_currency_symbol( $symbol['currency'] );
+//		$unformatted_price = $price;
+		$negative = $price < 0;
+		$price    = apply_filters( 'raw_woocommerce_price', floatval( $negative ? $price * - 1 : $price ) );
+		$price    = apply_filters( 'formatted_woocommerce_price', number_format( $price, $args['decimals'], $args['decimal_separator'], $args['thousand_separator'] ), $price, $args['decimals'], $args['decimal_separator'], $args['thousand_separator'] );
+
+		if ( apply_filters( 'woocommerce_price_trim_zeros', false ) && $args['decimals'] > 0 ) {
+			$price = wc_trim_zeros( $price );
+		}
+
+		$formatted_price = ( $negative ? '-' : '' ) . sprintf( $args['price_format'], '<span class="woocommerce-Price-currencySymbol">' . $display_symbol . '</span>', $price );
+
+		$return = '<span class="woocommerce-Price-amount amount">' . $formatted_price . '</span>';
+
+		if ( $args['ex_tax_label'] && wc_tax_enabled() ) {
+			$return .= ' <small class="woocommerce-Price-taxLabel tax_label">' . WC()->countries->ex_tax_or_vat() . '</small>';
+		}
+
+		return $return;
 	}
 
 	/**
@@ -73,7 +138,6 @@ class WOOMULTI_CURRENCY_F_Frontend_Symbol {
 			$formatted_price = ( $negative ? '-' : '' ) . sprintf( $price_format, '<span class="woocommerce-Price-currencySymbol">' . $currency_symbol . '</span>', $price );
 		} else {
 			$formatted_price = str_replace( '#PRICE#', $price, $currency_symbol );
-
 		}
 
 		$return = '<span class="woocommerce-Price-amount amount">' . $formatted_price . '</span>';
@@ -122,10 +186,9 @@ class WOOMULTI_CURRENCY_F_Frontend_Symbol {
 			$formatted_price = ( $negative ? '- ' : '' ) . sprintf( $price_format, '<span class="woocommerce-Price-currencySymbol">' . $currency_symbol . '</span>', $price );
 		} else {
 			$formatted_price = str_replace( '#PRICE#', $price, $currency_symbol );
-
 		}
 
-		$return = '<span class="woocommerce-Price-amount amount">' . $formatted_price . '</span>';
+		$return = '<span class="woocommerce-Price-amount amount"><bdi>' . $formatted_price . '</bdi></span>';
 
 		if ( $ex_tax_label && wc_tax_enabled() ) {
 			$return .= ' <small class="woocommerce-Price-taxLabel tax_label">' . WC()->countries->ex_tax_or_vat() . '</small>';
@@ -156,9 +219,8 @@ class WOOMULTI_CURRENCY_F_Frontend_Symbol {
 			return $currency_symbol;
 		}
 		$selected_currencies = $this->settings->get_list_currencies();
-		if ( is_account_page() ) {
-			return $currency_symbol;
-		} elseif ( isset( $selected_currencies[ $currency ] ) && isset( $selected_currencies[ $currency ]['custom'] ) && $selected_currencies[ $currency ]['custom'] != '' ) {
+
+		if ( isset( $selected_currencies[ $currency ] ) && isset( $selected_currencies[ $currency ]['custom'] ) && $selected_currencies[ $currency ]['custom'] != '' ) {
 
 			$currency_symbol = $selected_currencies[ $currency ]['custom'];
 
@@ -170,7 +232,7 @@ class WOOMULTI_CURRENCY_F_Frontend_Symbol {
 	/**
 	 * @param $data
 	 *
-	 * @return mixed|string|void
+	 * @return mixed|string
 	 */
 	public function woocommerce_currency( $data ) {
 
@@ -202,7 +264,8 @@ class WOOMULTI_CURRENCY_F_Frontend_Symbol {
 		return $order_id;
 	}
 
-	/**
+	/**Set correct format for each currency in email
+	 *
 	 * @param $format
 	 *
 	 * @return string
@@ -212,8 +275,11 @@ class WOOMULTI_CURRENCY_F_Frontend_Symbol {
 		$currencies          = $this->settings->get_currencies();
 		if ( is_order_received_page() ) {
 			global $wp;
-			$order_id = $wp->query_vars['order-received'];
-			$order    = wc_get_order( $order_id );
+			$order_id = isset( $wp->query_vars['order-received'] ) ? $wp->query_vars['order-received'] : '';
+			if ( ! $order_id ) {
+				return $format;
+			}
+			$order = wc_get_order( $order_id );
 			if ( is_object( $order ) ) {
 				$currency    = $order->get_currency();
 				$current_pos = $selected_currencies[ $currency ]['pos'];
@@ -267,4 +333,5 @@ class WOOMULTI_CURRENCY_F_Frontend_Symbol {
 
 		return (int) $decimal;
 	}
+
 }

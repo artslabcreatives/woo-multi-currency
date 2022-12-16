@@ -12,11 +12,12 @@ if ( ! class_exists( 'WMC_Widget_Rates' ) ) {
 		protected $settings;
 
 		function __construct() {
-			$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+//			$this->settings = new WOOMULTI_CURRENCY_Data();
+			$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 			parent::__construct(
 				'wmc_widget_rates', // Base ID
-				esc_attr__( 'List Currency Rates', 'woo-multi-currency' ), // Name
-				array( 'description' => esc_attr__( 'Show list currency exchange rates of Multi Currency for WooCommerce by VillaTheme', 'woo-multi-currency' ), ) // Args
+				esc_attr__( 'List Currency Rates', 'woocommerce-multi-currency' ), // Name
+				array( 'description' => esc_attr__( 'Show list currency exchange rates of WooCommerce Multi Currency by VillaTheme', 'woocommerce-multi-currency' ), ) // Args
 			);
 		}
 
@@ -28,14 +29,14 @@ if ( ! class_exists( 'WMC_Widget_Rates' ) ) {
 		 */
 		public function widget( $args, $instance ) {
 			if ( $this->settings->get_enable() ) {
-				echo WOOMULTI_CURRENCY_F_Data::wp_kses_post( $args['before_widget'] );
+				echo $args['before_widget'];
 				if ( ! empty( $instance['title'] ) ) {
-					echo WOOMULTI_CURRENCY_F_Data::wp_kses_post( $args['before_title'] . apply_filters( 'widget_title', $instance['title'] ) . $args['after_title'] );
+					echo $args['before_title'] . apply_filters( 'widget_title', $instance['title'] ) . $args['after_title'];
 				}
 
-				echo WOOMULTI_CURRENCY_F_Data::wp_kses_post( do_shortcode( apply_filters( 'wmc_shortcode', "[woo_multi_currency_rates]", $instance ) ) );
+				echo do_shortcode( apply_filters( 'wmc_shortcode', "[woo_multi_currency_rates]", $instance ) );
 
-				echo WOOMULTI_CURRENCY_F_Data::wp_kses_post( $args['after_widget'] );
+				echo $args['after_widget'];
 			}
 		}
 
@@ -45,14 +46,16 @@ if ( ! class_exists( 'WMC_Widget_Rates' ) ) {
 		 * @param $instance
 		 */
 		public function form( $instance ) {
-			$title = ! empty( $instance['title'] ) ? $instance['title'] : '';
+//			$setting = new WOOMULTI_CURRENCY_Data();
+			$setting =WOOMULTI_CURRENCY_Data::get_ins();
+			$title   = ! empty( $instance['title'] ) ? $instance['title'] : '';
 
 			?>
             <p>
-                <label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"><?php esc_html_e( 'Title:', 'woo-multi-currency' ); ?></label>
-                <input placeholder="<?php echo esc_attr__( 'Please enter your title', 'woo-multi-currency' ) ?>"
-                       class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"
-                       name="<?php echo esc_attr( $this->get_field_name( 'title' ) ); ?>" type="text"
+                <label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php esc_html_e( 'Title:', 'woocommerce-multi-currency' ); ?></label>
+                <input placeholder="<?php echo esc_attr__( 'Please enter your title', 'woocommerce-multi-currency' ) ?>"
+                       class="widefat" id="<?php echo $this->get_field_id( 'title' ); ?>"
+                       name="<?php echo $this->get_field_name( 'title' ); ?>" type="text"
                        value="<?php echo esc_attr( $title ); ?>">
             </p>
 			<?php do_action( 'wmc_after_widget_form', $instance, $this ) ?>

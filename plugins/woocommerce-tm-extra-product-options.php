@@ -4,14 +4,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_TM_Extra_Product_Options
+ * Class WOOMULTI_CURRENCY_Plugin_WooCommerce_TM_Extra_Product_Options
  * WooCommerce TM Extra Product Options By ThemeComplete
  */
-class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_TM_Extra_Product_Options {
+class WOOMULTI_CURRENCY_Plugin_WooCommerce_TM_Extra_Product_Options {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			if ( $this->settings->check_fixed_price() ) {
 				add_filter( 'wc_epo_enabled_currencies', array( $this, 'wc_epo_enabled_currencies' ) );
@@ -34,8 +34,10 @@ class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_TM_Extra_Product_Options {
 //			add_filter( 'wc_epo_add_cart_item_calculated_price2', array( $this, 'change_price' ) );
 
 			/*These hooks may be removed*/
+			if ( defined( 'THEMECOMPLETE_EPO_VERSION' ) && version_compare( THEMECOMPLETE_EPO_VERSION, '6.0', '>=' ) ) {
+				add_filter( 'wc_epo_calculate_price', array( $this, 'wc_epo_calculate_price' ), 10, 13 );
+			}
 			add_filter( 'woocommerce_tm_epo_price_on_cart', array( $this, 'change_price' ) );
-			add_filter( 'wc_epo_calculate_price', array( $this, 'wc_epo_calculate_price' ), 10, 13 );
 			add_filter( 'wc_epo_cart_options_prices', array( $this, 'change_price' ), 10, 2 );
 		}
 	}

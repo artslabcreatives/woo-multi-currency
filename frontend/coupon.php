@@ -4,11 +4,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class WOOMULTI_CURRENCY_F_Frontend_Coupon
+ * Class WOOMULTI_CURRENCY_Frontend_Coupon
  */
-class WOOMULTI_CURRENCY_F_Frontend_Coupon {
+class WOOMULTI_CURRENCY_Frontend_Coupon {
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			add_filter( 'woocommerce_coupon_get_amount', array( $this, 'woocommerce_coupon_get_amount' ), 10, 2 );
 			add_filter( 'woocommerce_coupon_get_minimum_amount', array(
@@ -27,13 +27,18 @@ class WOOMULTI_CURRENCY_F_Frontend_Coupon {
 	}
 
 	/**
-	 * Apply with percent
-	 *
 	 * @param $data
+	 * @param $obj WC_Coupon
 	 *
-	 * @return mixed
+	 * @return float|int|mixed|void
 	 */
 	public function woocommerce_coupon_get_amount( $data, $obj ) {
+		if ( function_exists( 'ywpar_is_redeeming_coupon' ) ) {
+			if ( ywpar_is_redeeming_coupon( $obj ) ) {
+				return $data;
+			}
+		}
+
 		if ( $obj->is_type( array( 'percent', 'recurring_percent', 'sign_up_fee_percent' ) ) ) {
 			return $data;
 		}

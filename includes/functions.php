@@ -82,10 +82,10 @@ if ( ! function_exists( 'wmc_locate_template' ) ) {
 
 	function wmc_locate_template( $template_name, $template_path = '', $default_path = '' ) {
 		if ( ! $template_path ) {
-			$template_path = '/woo-multi-currency/';
+			$template_path = '/woocommerce-multi-currency/';
 		}
 		if ( ! $default_path ) {
-			$default_path = WOOMULTI_CURRENCY_F_TEMPLATES;
+			$default_path = WOOMULTI_CURRENCY_TEMPLATES;
 		}
 		// Look within passed path within the theme - this is priority.
 		$template = locate_template( array( trailingslashit( $template_path ) . $template_name, $template_name ) );
@@ -102,11 +102,11 @@ if ( ! function_exists( 'wmc_locate_template' ) ) {
 if ( ! function_exists( 'wmc_get_price' ) ) {
 	function wmc_get_price( $price, $currency_code = false, $is_shipping = false, $match_decimals = false ) {
 
-		if ( is_admin() && ! wp_doing_ajax() ) {
+		if ( apply_filters( 'wmc_get_price_condition', is_admin() && ! wp_doing_ajax() ) ) {
 			return $price;
 		}
 
-		$setting             = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$setting             = WOOMULTI_CURRENCY_Data::get_ins();
 		$allow_multi_pay     = $setting->get_enable_multi_payment();
 		$equivalent_currency = $setting->get_param( 'equivalent_currency' );
 
@@ -129,14 +129,14 @@ if ( ! function_exists( 'wmc_get_price' ) ) {
 			if ( $currency_code && isset( $selected_currencies[ $currency_code ] ) ) {
 				$price = $price * (float) $selected_currencies[ $currency_code ]['rate'];
 				if ( $match_decimals ) {
-					$price = WOOMULTI_CURRENCY_F_Data::convert_price_to_float( $price, array( 'decimals' => absint( $selected_currencies[ $currency_code ]['decimals'] ) ) );
+					$price = WOOMULTI_CURRENCY_Data::convert_price_to_float( $price, array( 'decimals' => absint( $selected_currencies[ $currency_code ]['decimals'] ) ) );
 				}
 				$price = $is_shipping ? $price : apply_filters( 'wmc_get_price', $price, $currency_code );
 //				$price = apply_filters( 'wmc_get_price', $price, $currency_code );
 			} else {
 				$price = $price * (float) $selected_currencies[ $current_currency ]['rate'];
 				if ( $match_decimals ) {
-					$price = WOOMULTI_CURRENCY_F_Data::convert_price_to_float( $price, array( 'decimals' => absint( $selected_currencies[ $current_currency ]['decimals'] ) ) );
+					$price = WOOMULTI_CURRENCY_Data::convert_price_to_float( $price, array( 'decimals' => absint( $selected_currencies[ $current_currency ]['decimals'] ) ) );
 				}
 				$price = $is_shipping ? $price : apply_filters( 'wmc_get_price', $price, $current_currency );
 //				$price = apply_filters( 'wmc_get_price', $price, $current_currency );
@@ -146,22 +146,31 @@ if ( ! function_exists( 'wmc_get_price' ) ) {
 		return (float) $price; //(float)
 	}
 }
+
+if ( ! function_exists( 'wmc_get_price_shipping' ) ) {
+	function wmc_get_price_shipping( $price ) {
+		return wmc_get_price( $price, false, apply_filters( 'wmc_is_get_price_shipping', true ) );
+	}
+}
+
 if ( ! function_exists( 'wmc_get_exchange_rate' ) ) {
+
 	function wmc_get_exchange_rate( $currency_code = '' ) {
 		if ( ! $currency_code ) {
 			return 1;
 		}
 
-		return wmc_get_price( 1, $currency_code );
+		return wmc_get_price( 1, $currency_code, true );
 	}
 }
 
 if ( ! function_exists( 'wmc_revert_price' ) ) {
+
 	function wmc_revert_price( $price, $currency_code = '' ) {
 		if ( ! $price ) {
 			return false;
 		}
-		$setting          = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$setting          = WOOMULTI_CURRENCY_Data::get_ins();
 		$current_currency = $setting->get_current_currency();
 		$currency         = $currency_code ? $currency_code : $current_currency;
 		$rate             = wmc_get_exchange_rate( $currency );
@@ -169,6 +178,7 @@ if ( ! function_exists( 'wmc_revert_price' ) ) {
 		return $rate ? $price / $rate : '';
 	}
 }
+
 
 if ( ! function_exists( 'wmc_adjust_fixed_price' ) ) {
 	/**

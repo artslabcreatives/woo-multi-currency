@@ -1,17 +1,17 @@
 <?php
 
 /**Subscriptions for WooCommerce from WebToffee
- * Class WOOMULTI_CURRENCY_F_Plugin_Subscriptions_For_WooCommerce
+ * Class WOOMULTI_CURRENCY_Plugin_Subscriptions_For_WooCommerce
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_Subscriptions_For_WooCommerce {
+class WOOMULTI_CURRENCY_Plugin_Subscriptions_For_WooCommerce {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			add_filter( 'hf_subscription_product_price', array( $this, 'hf_subscription_product_price' ), 10, 2 );
 			add_filter( 'hf_subscriptions_product_signup_fee', array( $this, 'hf_subscriptions_product_signup_fee' ) );

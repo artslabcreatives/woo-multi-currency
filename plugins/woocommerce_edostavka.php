@@ -1,17 +1,17 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_Edostavka
+ * Class WOOMULTI_CURRENCY_Plugin_WooCommerce_Edostavka
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_Edostavka {
+class WOOMULTI_CURRENCY_Plugin_WooCommerce_Edostavka {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			add_filter( 'wmc_excluded_shipping_methods_from_converting', array(
 				$this,

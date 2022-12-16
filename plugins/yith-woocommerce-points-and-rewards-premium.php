@@ -3,14 +3,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_Yith_WooCommerce_Points_And_Rewards_Premium {
+class WOOMULTI_CURRENCY_Plugin_Yith_WooCommerce_Points_And_Rewards_Premium {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
-			add_filter( 'ywpar_rewards_conversion_rate', array( $this, 'ywpar_rewards_conversion_rate' ) );
-			add_filter( 'ywpar_conversion_points_rate', array( $this, 'ywpar_conversion_points_rate' ) );
+//			add_filter( 'ywpar_rewards_conversion_rate', array( $this, 'ywpar_rewards_conversion_rate' ) );
+//			add_filter( 'ywpar_conversion_points_rate', array( $this, 'ywpar_conversion_points_rate' ) );
+			add_filter( 'ywpar_get_active_currency_list', [ $this, 'currency_list' ] );
 		}
 	}
 
@@ -33,8 +34,9 @@ class WOOMULTI_CURRENCY_F_Plugin_Yith_WooCommerce_Points_And_Rewards_Premium {
 	}
 
 	public function ywpar_rewards_conversion_rate( $conversion_rate ) {
+
 		$currency = $this->settings->get_default_currency();
-		if ( $currency !== $this->settings->get_current_currency() ) {
+		if ( $currency !== $this->settings->get_current_currency() && function_exists( 'ywpar_get_customer' ) ) {
 			$customer    = ywpar_get_customer( null );
 			$valid_rules = YITH_WC_Points_Rewards_Helper::get_valid_redeeming_rules( $customer );
 			$conversion  = array();
@@ -86,5 +88,11 @@ class WOOMULTI_CURRENCY_F_Plugin_Yith_WooCommerce_Points_And_Rewards_Premium {
 		}
 
 		return $conversion;
+	}
+
+	public function currency_list( $currencies ) {
+		$currencies = $this->settings->get_currencies();
+
+		return $currencies;
 	}
 }

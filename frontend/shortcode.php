@@ -1,18 +1,19 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Frontend_Shortcode
+ * Class WOOMULTI_CURRENCY_Frontend_Shortcode
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
+class WOOMULTI_CURRENCY_Frontend_Shortcode {
 	protected $settings;
+	protected $price_args;
 	protected $current_url;
 
 	public function __construct() {
-		$this->settings   = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings   = WOOMULTI_CURRENCY_Data::get_ins();
 		$this->price_args = array();
 		add_action( 'init', array( $this, 'shortcode_init' ) );
 		add_filter( 'wmc_shortcode', array( $this, 'replace_shortcode' ), 10, 2 );
@@ -40,6 +41,7 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		add_shortcode( 'woo_multi_currency', array( $this, 'shortcode_woo_multi_currency' ) );
 		add_shortcode( 'woo_multi_currency_exchange', array( $this, 'woo_multi_currency_exchange' ) );
 		add_shortcode( 'woo_multi_currency_rates', array( $this, 'woo_multi_currency_rates' ) );
+		add_shortcode( 'woo_multi_currency_flatsome_mobile_menu', array( $this, 'shortcode_flatsome_mobile_menu' ) );
 		add_shortcode( 'woo_multi_currency_product_price_switcher', array( $this, 'product_price_switcher' ) );
 	}
 
@@ -56,18 +58,22 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		}
 		$price_switcher = '';
 		if ( $product_id ) {
-			$product          = wc_get_product( $product_id );
-			$links            = $this->settings->get_links();
-			$current_currency = $this->settings->get_current_currency();
-			$country          = $this->settings->get_country_data( $current_currency );
-			$list_currencies  = $this->settings->get_list_currencies();
-			$class            = array( 'wmc-price-switcher' );
-			wp_enqueue_style( 'wmc-flags', WOOMULTI_CURRENCY_F_CSS . 'flags-64.min.css' );
+			$product               = wc_get_product( $product_id );
+			$links                 = $this->settings->get_links();
+			$current_currency      = $this->settings->get_current_currency();
+			$country               = $this->settings->get_country_data( $current_currency );
+			$list_currencies       = $this->settings->get_list_currencies();
+			$switch_currency_by_js = $this->settings->enable_switch_currency_by_js();
+			$class                 = array( 'wmc-price-switcher' );
+			if ( $this->settings->get_params( 'click_to_expand_currencies' ) ) {
+				$class[] = 'wmc-currency-trigger-click';
+			}
+			wp_enqueue_style( 'wmc-flags', WOOMULTI_CURRENCY_CSS . 'flags-64.min.css' );
 			ob_start();
 			?>
-            <div class="woo-multi-currency <?php echo implode( ' ', $class ) ?>"
+            <div class="woocommerce-multi-currency <?php echo implode( ' ', $class ) ?>"
                  id="<?php echo esc_attr( self::get_shortcode_id() ) ?>"
-                 title="<?php esc_attr_e( 'Please select your currency', 'woo-multi-currency' ) ?>">
+                 title="<?php esc_attr_e( 'Please select your currency', 'woocommerce-multi-currency' ) ?>">
                 <div class="wmc-currency-wrapper">
                         <span class="wmc-current-currency">
                           <i style="transform: scale(0.8);"
@@ -78,22 +84,21 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 						foreach ( $links as $k => $link ) {
 							$sub_class = array( 'wmc-currency' );
 							if ( $k === $current_currency ) {
-								$sub_class[] = 'wmc-sub-currency-current';
+								$sub_class[] = 'wmc-hidden';
 							}
 							$country = $this->settings->get_country_data( $k );
 							?>
                             <div class="<?php echo esc_attr( implode( ' ', $sub_class ) ) ?>"
-                                 data-currency="<?php echo esc_attr( $k ) ?>">
-                                <a <?php echo esc_attr( WOOMULTI_CURRENCY_F_Data::get_rel_nofollow() ); ?>
-                                        title="<?php echo esc_attr( $country['name'] ) ?>"
-                                        href="<?php echo esc_url( $link ) ?>"
-                                        class="wmc-currency-redirect" data-currency="<?php echo esc_attr( $k ) ?>">
+                                 data-currency="<?php echo $k ?>">
+                                <a rel="nofollow" title="<?php echo esc_attr( $country['name'] ) ?>"
+                                   href="<?php echo esc_url( $switch_currency_by_js ? '#' : $link ) ?>"
+                                   class="wmc-currency-redirect" data-currency="<?php echo $k ?>">
                                     <i style="transform: scale(0.8);"
                                        class="vi-flag-64 flag-<?php echo strtolower( $country['code'] ) ?> "></i>
 									<?php
 									switch ( $this->settings->get_price_switcher() ) {
 										case 2:
-											echo '<span class="wmc-price-switcher-code">' . esc_html( $k ) . '</span>';
+											echo '<span class="wmc-price-switcher-code">' . $k . '</span>';
 											break;
 										case 3:
 											$decimals           = (int) $list_currencies[ $k ]['decimals'];
@@ -101,13 +106,13 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 											$thousand_separator = wc_get_price_thousand_separator();
 											$symbol             = $list_currencies[ $k ]['custom'];
 											$symbol             = $symbol ? $symbol : get_woocommerce_currency_symbol( $k );
-											$format             = self::get_price_format( $list_currencies[ $k ]['pos'] );
+											$format             = WOOMULTI_CURRENCY_Data::get_price_format( $list_currencies[ $k ]['pos'] );
 											$price              = 0;
 											$max_price          = '';
 											$custom_symbol      = strpos( $symbol, '#PRICE#' );
-											if ( $product->get_type() === 'variable' ) {
-												$price     = WOOMULTI_CURRENCY_F_Frontend_Price::get_variation_min_price( $product, $k );
-												$price_max = WOOMULTI_CURRENCY_F_Frontend_Price::get_variation_max_price( $product, $k );
+											if ( $product->get_type() == 'variable' ) {
+												$price     = WOOMULTI_CURRENCY_Frontend_Price::get_variation_min_price( $product, $k );
+												$price_max = WOOMULTI_CURRENCY_Frontend_Price::get_variation_max_price( $product, $k );
 												if ( $price_max > $price ) {
 													$price_max = number_format( wc_get_price_to_display( $product, array(
 														'qty'   => 1,
@@ -149,7 +154,7 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 											} else {
 												$formatted_price = str_replace( '#PRICE#', $price, $symbol );
 											}
-											echo '<span class="wmc-price-switcher-price">' . wp_kses_post( $formatted_price ) . wp_kses_post( $max_price ) . '</span>';
+											echo '<span class="wmc-price-switcher-price">' . $formatted_price . $max_price . '</span>';
 									}
 									?>
                                 </a>
@@ -171,7 +176,7 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 	 * Shortcode Currency selector
 	 */
 	public function shortcode_woo_multi_currency() {
-		$args = array( 'settings' => WOOMULTI_CURRENCY_F_Data::get_ins(), 'shortcode' => 'default' );
+		$args = array( 'settings' => WOOMULTI_CURRENCY_Data::get_ins(), 'shortcode' => 'default' );
 		ob_start();
 		wmc_get_template( 'woo-multi-currency-selector.php', $args );
 
@@ -190,8 +195,9 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		$layout    = isset( $data['layout'] ) ? $data['layout'] : '';
 		$flag_size = isset( $data['flag_size'] ) ? $data['flag_size'] : '';
 		$attr      = '';
+
 		if ( $flag_size ) {
-			$attr = 'flag_size =1';
+			$attr = 'flag_size =' . $flag_size;
 		}
 		if ( $layout ) {
 			$shortcode = '[woo_multi_currency_' . $layout . ' ' . $attr . ']';
@@ -224,7 +230,8 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		$list_currencies  = $this->settings->get_list_currencies();
 		$currency_default = $this->settings->get_default_currency();
 		ob_start(); ?>
-        <div class="woo-multi-currency wmc-shortcode wmc-list-currency-rates">
+        <div id="<?php echo esc_attr( self::get_shortcode_id() ) ?>"
+             class="woocommerce-multi-currency wmc-shortcode wmc-list-currency-rates">
 			<?php
 			if ( count( $currencies ) ) {
 				foreach ( $currencies as $currency ) {
@@ -233,9 +240,8 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 							continue;
 						} ?>
                         <div class="wmc-currency-rate">
-							<?php echo esc_html( $currency_default . '/' . $currency ) ?> = <?php
-
-							echo esc_html( $list_currencies[ $currency ]['rate'] );
+							<?php echo $currency_default . '/' . $currency ?> = <?php
+							echo $list_currencies[ $currency ]['rate'];
 							?>
                         </div>
 					<?php }
@@ -246,8 +252,8 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 						continue;
 					} ?>
                     <div class="wmc-currency-rate">
-						<?php echo esc_html( $currency_default . '/' . $key ) ?> = <?php
-						echo esc_html( $currency['rate'] );
+						<?php echo $currency_default . '/' . $key ?> = <?php
+						echo $currency['rate'];
 						?>
                     </div>
 				<?php }
@@ -258,12 +264,9 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 	}
 
 	/**
-	 * Shortcode exchange
+	 * @param $atts
 	 *
-	 * @param      $atts
-	 * @param null $content
-	 *
-	 * @return float|int|string
+	 * @return string
 	 */
 	public function woo_multi_currency_exchange( $atts ) {
 		global $product;
@@ -299,13 +302,13 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 			$selected_currencies = $this->settings->get_list_currencies();
 			if ( $currency && isset( $selected_currencies[ $currency ] ) && is_array( $selected_currencies[ $currency ] ) ) {
 				$data   = $selected_currencies[ $currency ];
-				$format = self::get_price_format( $data['pos'] );
+				$format = WOOMULTI_CURRENCY_Data::get_price_format( $data['pos'] );
 				$args   = array(
 					'currency'     => $currency,
 					'price_format' => $format
 				);
-				if ( $data['decimals'] ) {
-					$args['decimals'] = $data['decimals'];
+				if ( isset( $data['decimals'] ) ) {
+					$args['decimals'] = absint( $data['decimals'] );
 				}
 
 				if ( $original_price && $original_price > $price ) {
@@ -340,20 +343,10 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 
 	public function change_price_format_by_specific_currency( $args ) {
 		if ( count( $this->price_args ) ) {
-			$args = wp_parse_args(
-				$this->price_args,
-				$args );
+			$args = wp_parse_args( $this->price_args, $args );
 		}
 
 		return $args;
-	}
-
-	public function shortcode_plain_vertical_2( $atts, $content = null ) {
-		$args = array( 'settings' => WOOMULTI_CURRENCY_F_Data::get_ins(), 'shortcode' => 'listbox_code' );
-		ob_start();
-		wmc_get_template( 'woo-multi-currency-selector.php', $args );
-
-		return ob_get_clean();
 	}
 
 	/**
@@ -371,33 +364,36 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		);
 		ob_start();
 		if ( $title ) {
-			echo '<h3>' . esc_html( $title ) . '</h3>';
+			echo '<h3>' . $title . '</h3>';
 		}
 		$current_currency = $this->settings->get_current_currency();
 		$links            = $this->settings->get_links();
 		?>
-        <div class="woo-multi-currency wmc-shortcode plain-horizontal" data-layout="plain_horizontal">
-            <input type="hidden" class="wmc-current-url" value="<?php echo esc_url( $this->current_url ) ?>">
-			<?php foreach ( $links as $k => $link ) {
-				if ( $current_currency ) {
-					if ( $current_currency == $k ) {
-						$class = "wmc-active";
-					} else {
-						$class = '';
-					}
+        <div id="<?php echo esc_attr( self::get_shortcode_id() ) ?>"
+             class="woocommerce-multi-currency wmc-shortcode plain-horizontal" data-layout="plain_horizontal">
+            <input type="hidden" class="wmc-current-url" value="<?php echo esc_attr( $this->current_url ) ?>">
+			<?php
+			foreach ( $links as $k => $link ) {
+				$class = '';
+				if ( $current_currency == $k ) {
+					$class = "wmc-active";
 				}
-
 				/*End override*/
 				?>
                 <div class="wmc-currency <?php echo esc_attr( $class ) ?>">
-
-                    <a <?php echo esc_attr( WOOMULTI_CURRENCY_F_Data::get_rel_nofollow() ); ?>
-                            href="<?php echo $class ? '#' : esc_url( $link ) ?>">
-
+					<?php
+					if ( $this->settings->enable_switch_currency_by_js() ) {
+						$link = '#';
+					}
+					?>
+                    <a rel="nofollow" class="wmc-currency-redirect" href="<?php echo esc_attr( $link ) ?>"
+                       data-currency="<?php echo esc_attr( $k ) ?>">
 						<?php echo esc_html( $k ) ?>
                     </a>
                 </div>
-			<?php } ?>
+				<?php
+			}
+			?>
         </div>
 		<?php
 
@@ -414,43 +410,78 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 	 *
 	 * @return string
 	 */
-	public function shortcode_plain_vertical( $atts, $content = null ) {
+	public function shortcode_plain_vertical_2( $atts, $content = null ) {
+		$args = array( 'settings' => WOOMULTI_CURRENCY_Data::get_ins(), 'shortcode' => 'listbox_code' );
+		ob_start();
+		wmc_get_template( 'woo-multi-currency-selector.php', $args );
 
+		return ob_get_clean();
+	}
+
+	public function shortcode_plain_vertical( $atts, $content = null ) {
 		extract(
 			shortcode_atts(
 				array(
-					'title' => '',
+					'title'         => '',
+					'symbol'        => '',
+					'dropdown_icon' => 'arrow',
 				), $atts
 			)
 		);
 		$links            = $this->settings->get_links();
 		$current_currency = $this->settings->get_current_currency();
+		$current_symbol   = $symbol ? ' / ' . get_woocommerce_currency_symbol( $current_currency ) : '';
+
 		ob_start();
 		if ( $title ) {
-			echo '<h3>' . esc_html( $title ) . '</h3>';
+			echo '<h3>' . $title . '</h3>';
+		}
+
+		$class = $this->get_position_option();
+		if ( $this->settings->get_params( 'click_to_expand_currencies' ) ) {
+			$class .= ' wmc-currency-trigger-click';
+		}
+		$arrow = '';
+		switch ( $dropdown_icon ) {
+			case 'arrow';
+				$arrow = '<i class="wmc-open-dropdown-currencies"></i>';
+				break;
+			case 'triangle';
+				$arrow = '<span class="wmc-current-currency-arrow"></span>';
+				break;
+			default:
 		}
 		?>
-        <div class="woo-multi-currency wmc-shortcode plain-vertical" data-layout="plain_vertical">
-            <input type="hidden" class="wmc-current-url" value="<?php echo esc_url( $this->current_url ) ?>">
+        <div id="<?php echo esc_attr( self::get_shortcode_id() ) ?>"
+             class="woocommerce-multi-currency wmc-shortcode plain-vertical layout0 <?php echo esc_attr( $class ) ?>"
+             data-layout="plain_vertical" data-dropdown_icon="<?php echo esc_attr( $dropdown_icon ) ?>">
+            <input type="hidden" class="wmc-current-url" value="<?php echo esc_attr( $this->current_url ) ?>">
             <div class="wmc-currency-wrapper" onclick="">
 				<span class="wmc-current-currency">
-					<?php echo esc_html( $current_currency ) ?>
-                    <span class="wmc-current-currency-arrow"></span>
+                    <span class="wmc-current-currency-code"><?php echo esc_html( $current_currency . $current_symbol ) ?></span>
+					<?php echo $arrow ?>
 				</span>
                 <div class="wmc-sub-currency">
-					<?php foreach ( $links as $k => $link ) {
+					<?php
+					foreach ( $links as $k => $link ) {
+						$sub_class = array( 'wmc-currency' );
 						if ( $current_currency == $k ) {
-							continue;
+							$sub_class[] = 'wmc-hidden';
+						}
+						$sub_symbol = $symbol ? ' / ' . get_woocommerce_currency_symbol( $k ) : '';
+						if ( $this->settings->enable_switch_currency_by_js() ) {
+							$link = '#';
 						}
 						?>
-                        <div class="wmc-currency">
-
-                            <a <?php echo esc_attr( WOOMULTI_CURRENCY_F_Data::get_rel_nofollow() ); ?>
-                                    href="<?php echo esc_url( $link ) ?>">
-
-								<?php echo esc_html( $k ) ?></a>
+                        <div class="<?php echo esc_attr( implode( ' ', $sub_class ) ) ?>">
+                            <a rel="nofollow" class="wmc-currency-redirect" href="<?php echo esc_attr( $link ) ?>"
+                               data-currency="<?php echo esc_attr( $k ) ?>">
+								<?php echo esc_html( $k . $sub_symbol ) ?>
+                            </a>
                         </div>
-					<?php } ?>
+						<?php
+					}
+					?>
                 </div>
             </div>
         </div>
@@ -475,23 +506,26 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 			shortcode_atts(
 				array(
 					'title'     => '',
-					'flag_size' => 0.5
+					'flag_size' => 0.6
 				), $atts
 			)
 		);
-
 		$current_currency = $this->settings->get_current_currency();
 		$links            = $this->settings->get_links();
 		ob_start();
 		if ( $title ) {
-			echo '<h3>' . esc_html( $title ) . '</h3>';
+			echo '<h3>' . $title . '</h3>';
 		}
-		$class = '';
+
+		$class = $this->get_position_option();
+
 		?>
-        <div class="woo-multi-currency wmc-shortcode plain-horizontal layout3 <?php echo esc_attr( $class ) ?>"
-             data-layout="layout3">
-            <input type="hidden" class="wmc-current-url" value="<?php echo esc_url( $this->current_url ) ?>">
-			<?php foreach ( $links as $k => $link ) {
+        <div id="<?php echo esc_attr( self::get_shortcode_id() ) ?>"
+             class="woocommerce-multi-currency wmc-shortcode plain-horizontal layout3 <?php echo esc_attr( $class ) ?>"
+             data-layout="layout3" data-flag_size="<?php echo esc_attr( $flag_size ) ?>">
+            <input type="hidden" class="wmc-current-url" value="<?php echo esc_attr( $this->current_url ) ?>">
+			<?php
+			foreach ( $links as $k => $link ) {
 				if ( $current_currency ) {
 					if ( $current_currency == $k ) {
 						$class = "wmc-active";
@@ -501,17 +535,23 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 				}
 				/*End override*/
 				$country = $this->settings->get_country_data( $k );
+
 				?>
                 <div class="wmc-currency <?php echo esc_attr( $class ) ?>">
-
-                    <a <?php echo esc_attr( WOOMULTI_CURRENCY_F_Data::get_rel_nofollow() ); ?>
-                            title="<?php echo esc_attr( $country['name'] ) ?>"
-                            href="<?php echo $class ? '#' : esc_url( $link ) ?>">
-                        <i style="<?php echo esc_attr( $this->fix_style( $flag_size ) ) ?>"
+					<?php
+					if ( $this->settings->enable_switch_currency_by_js() ) {
+						$link = '#';
+					}
+					?>
+                    <a rel="nofollow" title="<?php echo esc_attr( $country['name'] ) ?>" class="wmc-currency-redirect"
+                       href="<?php echo esc_attr( $link ) ?>" data-currency="<?php echo esc_attr( $k ) ?>">
+                        <i style="<?php echo $this->fix_style( $flag_size ) ?>"
                            class="vi-flag-64 flag-<?php echo strtolower( $country['code'] ) ?> "></i>
                     </a>
                 </div>
-			<?php } ?>
+				<?php
+			}
+			?>
         </div>
 		<?php
 
@@ -522,9 +562,9 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 
 	public function enqueue_flag_css() {
 		if ( WP_DEBUG ) {
-			wp_enqueue_style( 'wmc-flags', WOOMULTI_CURRENCY_F_CSS . 'flags-64.css' );
+			wp_enqueue_style( 'wmc-flags', WOOMULTI_CURRENCY_CSS . 'flags-64.css' );
 		} else {
-			wp_enqueue_style( 'wmc-flags', WOOMULTI_CURRENCY_F_CSS . 'flags-64.min.css' );
+			wp_enqueue_style( 'wmc-flags', WOOMULTI_CURRENCY_CSS . 'flags-64.min.css' );
 		}
 	}
 
@@ -549,8 +589,9 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		extract(
 			shortcode_atts(
 				array(
-					'title'     => '',
-					'flag_size' => 0.5
+					'title'         => '',
+					'flag_size'     => 0.6,
+					'dropdown_icon' => 'arrow',
 				), $atts
 			)
 		);
@@ -559,40 +600,60 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		$country          = $this->settings->get_country_data( $current_currency );
 		ob_start();
 		if ( $title ) {
-			echo '<h3>' . esc_html( $title ) . '</h3>';
+			echo '<h3>' . $title . '</h3>';
 		}
-		$class = '';
+		$class = $this->get_position_option();
+		if ( $this->settings->get_params( 'click_to_expand_currencies' ) ) {
+			$class .= ' wmc-currency-trigger-click';
+		}
+		$arrow = '';
+		switch ( $dropdown_icon ) {
+			case 'arrow';
+				$arrow = '<i class="wmc-open-dropdown-currencies"></i>';
+				break;
+			case 'triangle';
+				$arrow = '<span class="wmc-current-currency-arrow"></span>';
+				break;
+			default:
+		}
 		?>
-        <div class="woo-multi-currency wmc-shortcode plain-vertical layout4 <?php echo esc_attr( $class ) ?>"
-             data-layout="layout4" data-flag_size="<?php echo esc_attr( $flag_size ) ?>">
-            <input type="hidden" class="wmc-current-url" value="<?php echo esc_url( $this->current_url ) ?>">
+        <div id="<?php echo esc_attr( self::get_shortcode_id() ) ?>"
+             class="woocommerce-multi-currency wmc-shortcode plain-vertical layout4 <?php echo esc_attr( $class ) ?>"
+             data-layout="layout4" data-flag_size="<?php echo esc_attr( $flag_size ) ?>"
+             data-dropdown_icon="<?php echo esc_attr( $dropdown_icon ) ?>">
+            <input type="hidden" class="wmc-current-url" value="<?php echo esc_attr( $this->current_url ) ?>">
             <div class="wmc-currency-wrapper" onclick="">
 				<span class="wmc-current-currency">
-				  <i style="<?php echo esc_attr( $this->fix_style( $flag_size ) ) ?>"
-                     data-flag_size="<?php echo esc_attr( $flag_size ) ?>"
-                     class="vi-flag-64 flag-<?php echo strtolower( $country['code'] ) ?> "> </i>
-                    <span class="wmc-current-currency-arrow"></span>
+                       <i style="<?php echo $this->fix_style( $flag_size ) ?>"
+                          class="wmc-current-flag vi-flag-64 flag-<?php echo strtolower( $country['code'] ) ?> "> </i>
+                    <?php echo $arrow ?>
 				</span>
                 <div class="wmc-sub-currency">
-					<?php foreach ( $links as $k => $link ) {
+					<?php
+					foreach ( $links as $k => $link ) {
+						$sub_class = array( 'wmc-currency' );
 						if ( $current_currency == $k ) {
-							continue;
+							$sub_class[] = 'wmc-hidden';
 						}
 						/*End override*/
 						$country = $this->settings->get_country_data( $k );
 						?>
-                        <div class="wmc-currency">
-
-                            <a <?php echo esc_attr( WOOMULTI_CURRENCY_F_Data::get_rel_nofollow() ); ?>
-                                    title="<?php echo esc_attr( $country['name'] ) ?>"
-                                    href="<?php echo esc_url( $link ) ?>">
-
-                                <i style="<?php echo esc_attr( $this->fix_style( $flag_size ) ) ?>"
-                                   alt="<?php echo esc_attr( $country['name'] ) ?>"
-                                   class="vi-flag-64 flag-<?php echo strtolower( $country['code'] ) ?> "> </i>
+                        <div class="<?php echo esc_attr( implode( ' ', $sub_class ) ) ?>">
+							<?php
+							if ( $this->settings->enable_switch_currency_by_js() ) {
+								$link = '#';
+							}
+							?>
+                            <a rel="nofollow" title="<?php echo esc_attr( $country['name'] ) ?>"
+                               class="wmc-currency-redirect" href="<?php echo esc_attr( $link ) ?>"
+                               data-currency="<?php echo esc_attr( $k ) ?>">
+                                <i style="<?php echo $this->fix_style( $flag_size ) ?>"
+                                   class="vi-flag-64 flag-<?php echo strtolower( $country['code'] ) ?> "></i>
                             </a>
                         </div>
-					<?php } ?>
+						<?php
+					}
+					?>
                 </div>
             </div>
         </div>
@@ -601,6 +662,16 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		$html = ob_get_clean();
 
 		return $html;
+	}
+
+	public function get_position_option() {
+		$class  = '';
+		$sticky = $this->settings->get_param( 'shortcode_position' );
+		if ( in_array( $sticky, array_keys( WOOMULTI_CURRENCY_Data::$pos_options ) ) ) {
+			$class = 'wmc-shortcode-fixed ' . $sticky;
+		}
+
+		return $class;
 	}
 
 	/**
@@ -613,58 +684,90 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 	 */
 	public function shortcode_layout5( $atts, $content = null ) {
 		$this->enqueue_flag_css();
+
 		extract(
 			shortcode_atts(
 				array(
-					'title'     => '',
-					'flag_size' => 0.5
+					'title'         => '',
+					'flag_size'     => 0.6,
+					'symbol'        => '',
+					'country_name'  => '',
+					'dropdown_icon' => 'arrow',
 				), $atts
 			)
 		);
-		$links            = $this->settings->get_links();
-		$current_currency = $this->settings->get_current_currency();
-		$country          = $this->settings->get_country_data( $current_currency );
+
+		$links                    = $this->settings->get_links();
+		$current_currency         = $this->settings->get_current_currency();
+		$country                  = $this->settings->get_country_data( $current_currency );
+		$display_current_currency = $country_name ? $country['name'] : $current_currency;
+		$display_current_currency = apply_filters( 'wmc_shortcode_custom_currency', $display_current_currency );
 		ob_start();
 		if ( $title ) {
-			echo '<h3>' . esc_html( $title ) . '</h3>';
+			echo '<h3>' . $title . '</h3>';
 		}
-		$class = '';
+
+		$class = $this->get_position_option();
+		if ( $this->settings->get_params( 'click_to_expand_currencies' ) ) {
+			$class .= ' wmc-currency-trigger-click';
+		}
+		$arrow = '';
+		switch ( $dropdown_icon ) {
+			case 'arrow';
+				$arrow = '<i class="wmc-open-dropdown-currencies"></i>';
+				break;
+			case 'triangle';
+				$arrow = '<span class="wmc-current-currency-arrow"></span>';
+				break;
+			default:
+		}
 		?>
-        <div class="woo-multi-currency wmc-shortcode plain-vertical layout5 <?php echo esc_attr( $class ) ?>"
-             data-layout="layout5">
-            <input type="hidden" class="wmc-current-url" value="<?php echo esc_url( $this->current_url ) ?>">
-            <div class="wmc-currency-wrapper" onclick="">
-				<span class="wmc-current-currency" style="line-height: <?php echo esc_attr( $flag_size * 40 ) ?>px">
-                       <i style="<?php echo esc_attr( $this->fix_style( $flag_size ) ) ?>"
-                          class="vi-flag-64 flag-<?php echo strtolower( $country['code'] ) ?> "> </i>
-                      <span>
-                        <?php echo esc_html( $current_currency ) ?>
+        <div id="<?php echo esc_attr( self::get_shortcode_id() ) ?>"
+             class="woocommerce-multi-currency wmc-shortcode plain-vertical layout5 <?php echo esc_attr( $class ) ?>"
+             data-layout="layout5" data-flag_size="<?php echo esc_attr( $flag_size ) ?>"
+             data-dropdown_icon="<?php echo esc_attr( $dropdown_icon ) ?>">
+            <input type="hidden" class="wmc-current-url" value="<?php echo esc_attr( $this->current_url ) ?>">
+            <div class="wmc-currency-wrapper">
+				<span class="wmc-current-currency" style="line-height: <?php echo $flag_size * 40 ?>px">
+                    <i style="<?php echo $this->fix_style( $flag_size ) ?>"
+                       class="wmc-current-flag vi-flag-64 flag-<?php echo strtolower( $country['code'] ) ?> "> </i>
+                    <span class="wmc-current-currency-code">
+                        <?php echo esc_html( $display_current_currency ) ?>
+                        <?php echo( $symbol ? ', ' . get_woocommerce_currency_symbol( $current_currency ) : '' ); ?>
                     </span>
-                    <span class="wmc-current-currency-arrow"></span>
+                   <?php echo $arrow ?>
 				</span>
                 <div class="wmc-sub-currency">
-					<?php foreach ( $links as $k => $link ) {
+					<?php
+					foreach ( $links as $k => $link ) {
+						$sub_class = array( 'wmc-currency' );
 						if ( $current_currency == $k ) {
-							continue;
+							$sub_class[] = 'wmc-hidden';
 						}
 
 						/*End override*/
-						$country = $this->settings->get_country_data( $k );
-
+						$country          = $this->settings->get_country_data( $k );
+						$display_currency = $country_name ? $country['name'] : $k;
+						$display_currency = apply_filters( 'wmc_shortcode_custom_currency', $display_currency );
 						?>
-                        <div class="wmc-currency">
-
-                            <a <?php echo esc_attr( WOOMULTI_CURRENCY_F_Data::get_rel_nofollow() ); ?>
-                                    title="<?php echo esc_attr( $country['name'] ) ?>"
-                                    href="<?php echo esc_url( $link ) ?>">
-                                <i style="<?php echo esc_attr( $this->fix_style( $flag_size ) ) ?>"
+                        <div class="<?php echo esc_attr( implode( ' ', $sub_class ) ) ?> <?php echo esc_attr( $display_currency ) ?>">
+							<?php
+							if ( $this->settings->enable_switch_currency_by_js() ) {
+								$link = '#';
+							}
+							?>
+                            <a rel="nofollow" title="<?php echo esc_attr( $country['name'] ) ?>"
+                               class="wmc-currency-redirect" href="<?php echo esc_attr( $link ) ?>"
+                               data-currency="<?php echo esc_attr( $k ) ?>">
+                                <i style="<?php echo $this->fix_style( $flag_size ) ?>"
                                    class="vi-flag-64 flag-<?php echo strtolower( $country['code'] ) ?> "> </i>
-                                <span>
-									<?php echo esc_html( $k ) ?>
-								</span>
+                                <span class="wmc-sub-currency-code"><?php echo esc_html( $display_currency ) ?></span>
+								<?php echo( $symbol ? ', ' . get_woocommerce_currency_symbol( $k ) : '' ); ?>
                             </a>
                         </div>
-					<?php } ?>
+						<?php
+					}
+					?>
                 </div>
             </div>
         </div>
@@ -692,11 +795,15 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		$current_currency = $this->settings->get_current_currency();
 		ob_start();
 		if ( $title ) {
-			echo '<h3>' . esc_html( $title ) . '</h3>';
+			echo '<h3>' . $title . '</h3>';
 		}
+		$class = $this->get_position_option();
+
 		?>
-        <div class="woo-multi-currency wmc-shortcode plain-horizontal layout6" data-layout="layout6">
-            <input type="hidden" class="wmc-current-url" value="<?php echo esc_url( $this->current_url ) ?>">
+        <div id="<?php echo esc_attr( self::get_shortcode_id() ) ?>"
+             class="woocommerce-multi-currency wmc-shortcode plain-horizontal layout6 <?php echo esc_attr( $class ) ?>"
+             data-layout="layout6">
+            <input type="hidden" class="wmc-current-url" value="<?php echo esc_attr( $this->current_url ) ?>">
 			<?php
 			foreach ( $links as $k => $link ) {
 				if ( $current_currency ) {
@@ -708,13 +815,19 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 				}
 				?>
                 <div class="wmc-currency <?php echo esc_attr( $class ) ?>">
-
-                    <a <?php echo esc_attr( WOOMULTI_CURRENCY_F_Data::get_rel_nofollow() ); ?>
-                            href="<?php echo $class ? '#' : esc_url( $link ) ?>">
-
-						<?php echo wp_kses_post( get_woocommerce_currency_symbol( $k ) ) ?></a>
+					<?php
+					if ( $this->settings->enable_switch_currency_by_js() ) {
+						$link = '#';
+					}
+					?>
+                    <a rel="nofollow" class="wmc-currency-redirect" href="<?php echo esc_attr( $link ) ?>"
+                       data-currency="<?php echo esc_attr( $k ) ?>">
+						<?php echo esc_html( get_woocommerce_currency_symbol( $k ) ) ?>
+                    </a>
                 </div>
-			<?php } ?>
+				<?php
+			}
+			?>
         </div>
 		<?php
 
@@ -732,44 +845,67 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 	 * @return string
 	 */
 	public function shortcode_layout7( $atts, $content = null ) {
-
 		extract(
 			shortcode_atts(
 				array(
-					'title' => '',
+					'title'         => '',
+					'dropdown_icon' => 'arrow',
 				), $atts
 			)
 		);
 		ob_start();
 		if ( $title ) {
-			echo '<h3>' . esc_html( $title ) . '</h3>';
+			echo '<h3>' . $title . '</h3>';
 		}
 		$current_currency = $this->settings->get_current_currency();
 		$symbol           = get_woocommerce_currency_symbol( $current_currency );
 		$links            = $this->settings->get_links();
+		$class            = $this->get_position_option();
+		if ( $this->settings->get_params( 'click_to_expand_currencies' ) ) {
+			$class .= ' wmc-currency-trigger-click';
+		}
+		$arrow = '';
+		switch ( $dropdown_icon ) {
+			case 'arrow';
+				$arrow = '<i class="wmc-open-dropdown-currencies"></i>';
+				break;
+			case 'triangle';
+				$arrow = '<span class="wmc-current-currency-arrow"></span>';
+				break;
+			default:
+		}
 		?>
-        <div class="woo-multi-currency wmc-shortcode plain-vertical vertical-currency-symbols" data-layout="layout7">
-            <input type="hidden" class="wmc-current-url" value="<?php echo esc_url( $this->current_url ) ?>">
-            <div class="wmc-currency-wrapper" onclick="">
+        <div id="<?php echo esc_attr( self::get_shortcode_id() ) ?>"
+             class="woocommerce-multi-currency wmc-shortcode plain-vertical vertical-currency-symbols <?php echo esc_attr( $class ) ?>"
+             data-layout="layout7" data-dropdown_icon="<?php echo esc_attr( $dropdown_icon ) ?>">
+            <input type="hidden" class="wmc-current-url" value="<?php echo esc_attr( $this->current_url ) ?>">
+            <div class="wmc-currency-wrapper">
 				<span class="wmc-current-currency">
-					<?php echo wp_kses_post( $symbol ) ?>
-                    <span class="wmc-current-currency-arrow"></span>
+					<span class="wmc-current-currency-symbol"><?php echo $symbol ?></span>
+					<?php echo $arrow ?>
 				</span>
                 <div class="wmc-sub-currency">
-					<?php foreach ( $links as $k => $link ) {
-
+					<?php
+					foreach ( $links as $k => $link ) {
+						$sub_class = array( 'wmc-currency' );
 						if ( $current_currency == $k ) {
-							continue;
+							$sub_class[] = 'wmc-hidden';
 						}
 						?>
-                        <div class="wmc-currency">
-
-                            <a <?php echo esc_attr( WOOMULTI_CURRENCY_F_Data::get_rel_nofollow() ); ?>
-                                    href="<?php echo esc_url( $link ) ?>">
-
-								<?php echo get_woocommerce_currency_symbol( $k ); ?></a>
+                        <div class="<?php echo esc_attr( implode( ' ', $sub_class ) ) ?>">
+							<?php
+							if ( $this->settings->enable_switch_currency_by_js() ) {
+								$link = '#';
+							}
+							?>
+                            <a rel="nofollow" class="wmc-currency-redirect" href="<?php echo esc_attr( $link ) ?>"
+                               data-currency="<?php echo esc_attr( $k ) ?>">
+								<?php echo get_woocommerce_currency_symbol( $k ); ?>
+                            </a>
                         </div>
-					<?php } ?>
+						<?php
+					}
+					?>
                 </div>
             </div>
         </div>
@@ -785,31 +921,44 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		$current_currency = $this->settings->get_current_currency();
 		$symbol           = get_woocommerce_currency_symbol( $current_currency );
 		$links            = $this->settings->get_links();
-		$fix_class        = ctype_alpha( substr( $symbol, 0, 2 ) ) && strlen( $symbol ) >= 3 ? 'wmc-fix-font' : '';
+		$class            = $this->get_position_option();
+		if ( $this->settings->get_params( 'click_to_expand_currencies' ) ) {
+			$class .= ' wmc-currency-trigger-click';
+		}
+		$fix_class = ctype_alpha( substr( $symbol, 0, 2 ) ) && strlen( $symbol ) >= 3 ? 'wmc-fix-font' : '';
 		?>
-        <div class="woo-multi-currency wmc-shortcode vertical-currency-symbols-circle" data-layout="layout8">
-            <input type="hidden" class="wmc-current-url" value="<?php echo esc_url( $this->current_url ) ?>">
+        <div id="<?php echo esc_attr( self::get_shortcode_id() ) ?>"
+             class="woocommerce-multi-currency wmc-shortcode vertical-currency-symbols-circle <?php echo esc_attr( $class ) ?>"
+             data-layout="layout8">
+            <input type="hidden" class="wmc-current-url" value="<?php echo esc_attr( $this->current_url ) ?>">
             <div class="wmc-currency-wrapper" onclick="">
 				<span class="wmc-current-currency <?php echo esc_attr( $fix_class ) ?>">
-					<?php echo wp_kses_post( $symbol ) ?>
+					<?php echo esc_html( $symbol ) ?>
 				</span>
 
                 <div class="wmc-sub-currency">
-					<?php foreach ( $links as $k => $link ) {
+					<?php
+					foreach ( $links as $k => $link ) {
+						$sub_class = array( 'wmc-currency' );
 						if ( $current_currency == $k ) {
-							continue;
+							$sub_class[] = 'wmc-hidden';
 						}
 						?>
-                        <div class="wmc-currency">
+                        <div class="<?php echo esc_attr( implode( ' ', $sub_class ) ) ?>">
 							<?php
-							$symbol    = get_woocommerce_currency_symbol( $k );
+							$symbol    = esc_html( get_woocommerce_currency_symbol( $k ) );
 							$fix_class = ctype_alpha( substr( $symbol, 0, 2 ) ) && strlen( $symbol ) >= 3 ? 'wmc-fix-font' : '';
+							if ( $this->settings->enable_switch_currency_by_js() ) {
+								$link = '#';
+							}
 							?>
-                            <a <?php echo esc_attr( WOOMULTI_CURRENCY_F_Data::get_rel_nofollow() ); ?>
-                                    class="<?php echo esc_attr( $fix_class ) ?>"
-                                    href="<?php echo esc_url( $link ) ?>"><?php echo wp_kses_post( $symbol ) ?></a>
+                            <a rel="nofollow" class="wmc-currency-redirect <?php echo esc_attr( $fix_class ) ?>"
+                               href="<?php echo esc_attr( $link ) ?>"
+                               data-currency="<?php echo esc_attr( $k ) ?>"><?php echo $symbol; ?></a>
                         </div>
-					<?php } ?>
+						<?php
+					}
+					?>
                 </div>
             </div>
         </div>
@@ -821,13 +970,16 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 	public function shortcode_layout9( $atts, $content = null ) {
 		$current_currency     = $this->settings->get_current_currency();
 		$links                = $this->settings->get_links();
+		$class                = $this->get_position_option();
 		$current_currency_pos = array_search( $current_currency, array_keys( $links ), true );
 		$left_arr             = array_slice( $links, 0, $current_currency_pos );
 		$right_arr            = array_slice( $links, $current_currency_pos );
 		ob_start();
 		?>
-        <div class="woo-multi-currency wmc-shortcode layout9 " data-layout="layout9">
-            <input type="hidden" class="wmc-current-url" value="<?php echo esc_url( $this->current_url ) ?>">
+        <div id="<?php echo esc_attr( self::get_shortcode_id() ) ?>"
+             class="woocommerce-multi-currency wmc-shortcode layout9 <?php echo esc_attr( $class ) ?>"
+             data-layout="layout9">
+            <input type="hidden" class="wmc-current-url" value="<?php echo esc_attr( $this->current_url ) ?>">
             <div class="wmc-currency-wrapper">
 				<?php
 				if ( is_array( $left_arr ) && count( $left_arr ) ) {
@@ -836,8 +988,14 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 						$symbol = get_woocommerce_currency_symbol( $code );
 						?>
                         <div class="wmc-currency wmc-left" style="z-index: <?php echo esc_attr( $i ++ ) ?>">
-                            <a <?php echo esc_attr( WOOMULTI_CURRENCY_F_Data::get_rel_nofollow() ); ?>
-                                    href="<?php echo esc_url( $link ) ?>"><?php echo wp_kses_post( $symbol ) ?></a>
+							<?php
+							if ( $this->settings->enable_switch_currency_by_js() ) {
+								$link = '#';
+							}
+							?>
+                            <a rel="nofollow" class="wmc-currency-redirect"
+                               href="<?php echo esc_attr( $link ) ?>"
+                               data-currency="<?php echo esc_attr( $code ) ?>"><?php echo $symbol; ?></a>
                         </div>
 						<?php
 					}
@@ -853,8 +1011,14 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 						?>
                         <div class="wmc-currency <?php echo esc_attr( $align ) . ' ' . esc_attr( $active ) ?>"
                              style="z-index: <?php echo esc_attr( $z_index ) ?>">
-                            <a <?php echo esc_attr( WOOMULTI_CURRENCY_F_Data::get_rel_nofollow() ); ?>
-                                    href="<?php echo esc_url( $link ) ?>"><?php echo wp_kses_post( "{$current_currency} {$symbol}" ) ?></a>
+							<?php
+							if ( $this->settings->enable_switch_currency_by_js() ) {
+								$link = '#';
+							}
+							?>
+                            <a rel="nofollow" class="wmc-currency-redirect"
+                               href="<?php echo esc_attr( $link ) ?>"
+                               data-currency="<?php echo esc_attr( $code ) ?>"><?php echo $current_currency . ' ' . $symbol; ?></a>
                         </div>
 						<?php
 					}
@@ -873,9 +1037,11 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		extract(
 			shortcode_atts(
 				array(
-					'title'     => '',
-					'flag_size' => 0.4,
-					'symbol'    => '',
+					'title'         => '',
+					'flag_size'     => 0.4,
+					'symbol'        => '',
+					'dropdown_icon' => 'arrow',
+					'custom_format' => '',
 				), $atts
 			)
 		);
@@ -884,17 +1050,32 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		$current_currency = $this->settings->get_current_currency();
 		ob_start();
 		if ( $title ) {
-			echo '<h3>' . esc_html( $title ) . '</h3>';
+			echo '<h3>' . $title . '</h3>';
 		}
 		$data_flag_size = $flag_size;
-		$line_height    = ( $flag_size * 40 ) . 'px';
-
+		$class          = $this->get_position_option();
+		if ( $this->settings->get_params( 'click_to_expand_currencies' ) ) {
+			$class .= ' wmc-currency-trigger-click';
+		}
+		$line_height = ( $flag_size * 40 ) . 'px';
+		$arrow       = '';
+		switch ( $dropdown_icon ) {
+			case 'arrow';
+				$arrow = '<i class="wmc-open-dropdown-currencies" style="height: ' . $line_height . '"></i>';
+				break;
+			case 'triangle';
+				$arrow = '<span class="wmc-current-currency-arrow"></span>';
+				break;
+			default:
+		}
 		$countries = get_woocommerce_currencies();
 		$flag_size = $this->fix_style( $flag_size );
 		?>
         <div id="<?php echo esc_attr( self::get_shortcode_id() ) ?>"
-             class="woo-multi-currency wmc-shortcode plain-vertical layout10"
-             data-layout="layout10" data-flag_size="<?php echo esc_attr( $data_flag_size ) ?>">
+             class="woocommerce-multi-currency wmc-shortcode plain-vertical layout10 <?php echo esc_attr( $class ) ?>"
+             data-layout="layout10" data-flag_size="<?php echo esc_attr( $data_flag_size ) ?>"
+             data-dropdown_icon="<?php echo esc_attr( $dropdown_icon ) ?>"
+             data-custom_format="<?php echo esc_attr( $custom_format ) ?>">
             <input type="hidden" class="wmc-current-url" value="<?php echo esc_attr( $this->current_url ) ?>">
             <div class="wmc-currency-wrapper">
 				<span class="wmc-current-currency" style="line-height: <?php echo esc_attr( $line_height ) ?>">
@@ -904,33 +1085,71 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
                     $symbol       = get_woocommerce_currency_symbol( $current_currency );
                     ?>
                     <span>
-                        <i style="<?php echo esc_attr( $flag_size ) ?>"
-                           class="vi-flag-64 flag-<?php echo esc_attr( $country_code ) ?>"> </i>
-                        <span class="wmc-text wmc-text-<?php echo esc_attr( $current_currency ) ?>"><span
-                                    class="wmc-text-currency-text">(<?php echo esc_html( $current_currency ) ?>) </span><?php echo wp_kses_post( $symbol ) ?></span>
+                    <?php
+                    echo "<i style='{$flag_size}' class='wmc-current-flag vi-flag-64 flag-{$country_code}'></i>";
+                    if ( $custom_format ) {
+	                    ?>
+                        <span class="<?php echo esc_attr( "wmc-text wmc-text-{$current_currency}" ) ?>">
+                            <?php
+                            echo str_replace( array(
+	                            '{currency_name}',
+	                            '{currency_code}',
+	                            '{currency_symbol}'
+                            ), array(
+	                            '<span class="wmc-currency-name">' . $countries[ $current_currency ] . '</span>',
+	                            '<span class="wmc-currency-code">' . $current_currency . '</span>',
+	                            '<span class="wmc-currency-symbol">' . $symbol . '</span>'
+                            ), $custom_format );
+                            ?>
+                        </span>
+	                    <?php
+                    } else {
+	                    echo "<span class='wmc-text wmc-text-{$current_currency}'>
+                                <span class='wmc-text-currency-text'>({$current_currency}) </span>
+                                <span class='wmc-text-currency-symbol'>{$symbol}</span>
+                            </span>";
+                    }
+                    ?>
                     </span>
-                    <span class="wmc-current-currency-arrow"></span>
+                    <?php
+                    echo $arrow
+                    ?>
                 </span>
                 <div class="wmc-sub-currency">
 					<?php
 					foreach ( $links as $k => $link ) {
 						$sub_class = array( 'wmc-currency' );
 						if ( $current_currency == $k ) {
-							continue;
+							$sub_class[] = 'wmc-hidden';
 						}
 						$country = $this->settings->get_country_data( $k );
 						?>
                         <div class="<?php echo esc_attr( implode( ' ', $sub_class ) ) ?>"
                              data-currency="<?php echo esc_attr( $k ) ?>">
 							<?php
-							$html   = '';
+							$html = '';
+							if ( $this->settings->enable_switch_currency_by_js() ) {
+								$link = '#';
+							}
 							$symbol = get_woocommerce_currency_symbol( $k );
-							$html   .= sprintf( "<a rel='nofollow' class='wmc-currency-redirect' href='%1s' style='line-height:%2s' data-currency='%3s' data-currency_symbol='%4s'>", esc_url( $link ), esc_attr( $line_height ), esc_attr( $k ), esc_attr( $symbol ) );
-							$html   .= sprintf( "<i style='%1s' class='vi-flag-64 flag-%2s'></i>", esc_attr( $flag_size ), esc_attr( strtolower( $country['code'] ) ) );
-							$html   .= sprintf( "<span class='wmc-sub-currency-name'>%1s</span>", esc_html( $countries[ $k ] ) );
-							$html   .= sprintf( "<span class='wmc-sub-currency-symbol'>(%1s)</span>", esc_html( $symbol ) );
-							$html   .= '</a>';
-							echo WOOMULTI_CURRENCY_F_Data::wp_kses_post( $html );
+							$html   .= sprintf( "<a rel='nofollow' class='wmc-currency-redirect' href='%1s' style='line-height:%2s' data-currency='%3s' data-currency_symbol='%4s'>", esc_url( $link ), $line_height, $k, $symbol );
+							$html   .= sprintf( "<i style='%1s' class='vi-flag-64 flag-%2s'></i>", $flag_size, strtolower( $country['code'] ) );
+							if ( $custom_format ) {
+								$html .= '<span>' . str_replace( array(
+										'{currency_name}',
+										'{currency_code}',
+										'{currency_symbol}'
+									), array(
+										'<span class="wmc-sub-currency-name">' . $countries[ $k ] . '</span>',
+										'<span class="wmc-sub-currency-code">' . $k . '</span>',
+										'<span class="wmc-sub-currency-symbol">' . $symbol . '</span>'
+									), $custom_format ) . '</span>';
+							} else {
+								$html .= sprintf( "<span class='wmc-sub-currency-name'>%1s</span>", esc_html( $countries[ $k ] ) );
+								$html .= sprintf( "<span class='wmc-sub-currency-symbol'>(%1s)</span>", esc_html( $symbol ) );
+							}
+							$html .= '</a>';
+							echo $html;
 							?>
                         </div>
 						<?php
@@ -944,24 +1163,70 @@ class WOOMULTI_CURRENCY_F_Frontend_Shortcode {
 		return ob_get_clean();
 	}
 
-	private static function get_price_format( $pos ) {
-		switch ( $pos ) {
-			case 'left' :
-				$format = '%1$s%2$s';
-				break;
-			case 'right' :
-				$format = '%2$s%1$s';
-				break;
-			case 'left_space' :
-				$format = '%1$s&nbsp;%2$s';
-				break;
-			case 'right_space' :
-			default:
-				$format = '%2$s&nbsp;%1$s';
-				break;
-		}
+	public function shortcode_flatsome_mobile_menu( $atts, $content = null ) {
+		$this->enqueue_flag_css();
 
-		return $format;
+		extract(
+			shortcode_atts(
+				array(
+					'title'     => '',
+					'flag_size' => 0.6,
+					'symbol'    => ''
+				), $atts
+			)
+		);
+
+		$links            = $this->settings->get_links();
+		$current_currency = $this->settings->get_current_currency();
+		$country          = $this->settings->get_country_data( $current_currency );
+		ob_start();
+
+		?>
+        <span class="wmc-flatsome-mobile-nav wmc-current-currency" style="line-height: <?php echo $flag_size * 40 ?>px">
+                 <span>
+                    <?php echo esc_html( $current_currency ) ?>
+                    <?php echo( $symbol ? ', ' . get_woocommerce_currency_symbol( $current_currency ) : '' ); ?>
+                </span>
+                <i style="<?php echo $this->fix_style( $flag_size ) ?>"
+                   class="vi-flag-64 flag-<?php echo strtolower( $country['code'] ) ?> "> </i>
+
+        </span>
+
+        <ul class="children">
+			<?php
+			foreach ( $links as $k => $link ) {
+				if ( $current_currency == $k ) {
+					continue;
+				}
+
+				$country = $this->settings->get_country_data( $k );
+				?>
+                <li class="wmc-currency">
+					<?php
+					if ( $this->settings->enable_switch_currency_by_js() ) {
+						$link = '#';
+					}
+					?>
+                    <a rel="nofollow" title="<?php echo esc_attr( $country['name'] ) ?>"
+                       href="<?php echo esc_attr( $link ) ?>" style="line-height: <?php echo $flag_size * 40 ?>px">
+                    </a>
+                    <span><?php echo esc_html( $k ) ?></span>
+                    <i style="<?php echo $this->fix_style( $flag_size ) ?>"
+                       class="vi-flag-64 flag-<?php echo strtolower( $country['code'] ) ?> "> </i>
+					<?php echo( $symbol ? ', ' . get_woocommerce_currency_symbol( $k ) : '' ); ?>
+                </li>
+				<?php
+			}
+			?>
+        </ul>
+		<?php
+
+		$html = ob_get_clean();
+
+		return $html;
 	}
 
+	public function shortcode_custom_work_layout( $attr, $content = null ) {
+		do_action( 'wmc_custom_work_layout', $attr, $content );
+	}
 }

@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class WOOMULTI_CURRENCY_Admin_Reports
  */
-class WOOMULTI_CURRENCY_F_Admin_Reports {
+class WOOMULTI_CURRENCY_Admin_Reports {
 	protected $settings;
 	protected $currencies;
 	protected $currency;
@@ -17,10 +17,12 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 	protected $order_items;
 	protected $current_range;
 	protected $default_currency;
+	protected static $target_rate;
 	protected $is_dashboard;
+	protected $in_shop_order;
 
 	function __construct() {
-		$this->settings     = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings     = WOOMULTI_CURRENCY_Data::get_ins();
 		$this->is_dashboard = false;
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 		add_filter( 'woocommerce_reports_get_order_report_data_args', array( $this, 'report_by_currency' ) );
@@ -32,6 +34,8 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 		add_filter( 'wc_get_price_decimals', array( $this, 'wc_get_price_decimals' ), 99 );
 		$this->default_currency = $this->settings->get_default_currency();
 		$this->currencies       = $this->settings->get_list_currencies();
+
+		add_action( 'woocommerce_admin_order_item_headers', array( $this, 'woocommerce_admin_order_item_headers' ) );
 	}
 
 	/**Get current range to recalculate report data
@@ -57,14 +61,18 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 	public function admin_enqueue_scripts() {
 		$screen    = get_current_screen();
 		$screen_id = $screen ? $screen->id : '';
-		if ( 'woocommerce_page_wc-reports' == $screen_id ) {
-			$tab          = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'orders';
-			$report       = isset( $_GET['report'] ) ? sanitize_text_field( wp_unslash( $_GET['report'] ) ) : '';
-			$currency     = isset( $_GET['wmc-currency'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_GET['wmc-currency'] ) ) ) : '';
-			$view_default = isset( $_GET['wmc-view-default-currency'] ) ? sanitize_text_field( wp_unslash( $_GET['wmc-view-default-currency'] ) ) : '';
+		if ( 'woocommerce_page_wc-reports' === $screen_id ) {
+			$tab             = isset( $_REQUEST['tab'] ) ? wp_unslash( $_REQUEST['tab'] ) : 'orders';
+			$report          = isset( $_REQUEST['report'] ) ? wp_unslash( $_REQUEST['report'] ) : '';
+			$currency        = isset( $_REQUEST['wmc-currency'] ) ? strtoupper( wp_unslash( $_REQUEST['wmc-currency'] ) ) : '';
+			$target_currency = isset( $_REQUEST['wmc-target-currency'] ) ? strtoupper( wp_unslash( $_REQUEST['wmc-target-currency'] ) ) : '';
+			if ( isset( $this->currencies[ $target_currency ] ) ) {
+				self::$target_rate = $this->currencies[ $target_currency ]['rate'];
+			}
+			$view_default = isset( $_REQUEST['wmc-view-default-currency'] ) ? wp_unslash( $_REQUEST['wmc-view-default-currency'] ) : '';
 			if ( ( $tab === 'orders' && $report !== 'coupon_usage' ) || ( $tab === 'customers' && $report === 'customers' ) ) {
-				wp_enqueue_style( 'woocommerce-multi-currency-admin-reports', WOOMULTI_CURRENCY_F_CSS . 'reports.css', '', WOOMULTI_CURRENCY_F_VERSION );
-				wp_enqueue_script( 'woocommerce-multi-currency-admin-reports', WOOMULTI_CURRENCY_F_JS . 'reports.js', array( 'jquery' ), WOOMULTI_CURRENCY_F_VERSION );
+				wp_enqueue_style( 'woocommerce-multi-currency-admin-reports', WOOMULTI_CURRENCY_CSS . 'reports.css', '', WOOMULTI_CURRENCY_VERSION );
+				wp_enqueue_script( 'woocommerce-multi-currency-admin-reports', WOOMULTI_CURRENCY_JS . 'reports.js', array( 'jquery' ), WOOMULTI_CURRENCY_VERSION );
 				wp_localize_script( 'woocommerce-multi-currency-admin-reports', 'woocommerce_multi_currency_admin_reports', array(
 					'currency' => $currency ? $currency : 'all-currencies'
 				) );
@@ -72,7 +80,7 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 			}
 			if ( ! $currency ) {
 				if ( $tab === 'orders' ) {
-					if ( ! $report || $report === 'sales_by_date' ) {
+					if ( ! $report || $report === 'sales_by_date' || apply_filters( 'wmc_admin_reports', false, $report ) ) {
 						add_filter( 'woocommerce_reports_get_order_report_data_args', array(
 							$this,
 							'add_return_order_id'
@@ -123,7 +131,7 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 									)
 								);
 
-								$results[] = self::convert_to_default_currency( $total_sales, $currency_data['rate'] );
+								$results[] = self::convert_to_target_currency( $total_sales, $currency_data['rate'] );
 								remove_filter( 'woocommerce_reports_get_order_report_data_args', array(
 									$this,
 									'report_by_currency_for_all'
@@ -135,7 +143,7 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 							'woocommerce_reports_get_order_report_data'
 						), 10, 2 );
 						$this->total_sales = array_sum( $results );
-					} elseif ( $report === 'sales_by_category' && ! empty( $_GET['show_categories'] ) ) {
+					} elseif ( $report === 'sales_by_category' && ! empty( $_REQUEST['show_categories'] ) ) {
 						include_once( WC()->plugin_path() . '/includes/admin/reports/class-wc-admin-report.php' );
 						include_once( WC()->plugin_path() . '/includes/admin/reports/class-wc-report-sales-by-category.php' );
 						$current_range = $this->get_current_range();
@@ -178,7 +186,7 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 								);
 								if ( is_array( $order_items ) && count( $order_items ) ) {
 									foreach ( $order_items as $order_item ) {
-										$order_item->order_item_amount = self::convert_to_default_currency( $order_item->order_item_amount, $currency_data['rate'] );
+										$order_item->order_item_amount = self::convert_to_target_currency( $order_item->order_item_amount, $currency_data['rate'] );
 									}
 								}
 								$results = array_merge( $results, $order_items );
@@ -196,7 +204,7 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 					}
 				}
 			} elseif ( $view_default === 'yes' && $this->default_currency !== $currency ) {
-				if ( ! $report || $report === 'sales_by_date' ) {
+				if ( ! $report || $report === 'sales_by_date' || apply_filters( 'wmc_admin_reports', false, $report ) ) {
 					$this->currency = $currency;
 					if ( isset( $this->currencies[ $this->currency ] ) ) {
 						include_once( WC()->plugin_path() . '/includes/admin/reports/class-wc-admin-report.php' );
@@ -214,39 +222,39 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 						$this->chart_interval = $report->chart_interval;
 						if ( isset( $result->orders ) && is_array( $result->orders ) && count( $result->orders ) ) {
 							foreach ( $result->orders as $order ) {
-								$order->total_sales        = self::convert_to_default_currency( $order->total_sales, $this->currencies[ $this->currency ]['rate'] );
-								$order->total_shipping     = self::convert_to_default_currency( $order->total_shipping, $this->currencies[ $this->currency ]['rate'] );
-								$order->total_tax          = self::convert_to_default_currency( $order->total_tax, $this->currencies[ $this->currency ]['rate'] );
-								$order->total_shipping_tax = self::convert_to_default_currency( $order->total_shipping_tax, $this->currencies[ $this->currency ]['rate'] );
+								$order->total_sales        = self::convert_to_target_currency( $order->total_sales, $this->currencies[ $this->currency ]['rate'] );
+								$order->total_shipping     = self::convert_to_target_currency( $order->total_shipping, $this->currencies[ $this->currency ]['rate'] );
+								$order->total_tax          = self::convert_to_target_currency( $order->total_tax, $this->currencies[ $this->currency ]['rate'] );
+								$order->total_shipping_tax = self::convert_to_target_currency( $order->total_shipping_tax, $this->currencies[ $this->currency ]['rate'] );
 							}
 						}
 						if ( isset( $result->refunded_orders ) && is_array( $result->refunded_orders ) && count( $result->refunded_orders ) ) {
 							foreach ( $result->refunded_orders as $refunded_orders ) {
-								$refunded_orders->total_refund       = self::convert_to_default_currency( $refunded_orders->total_refund, $this->currencies[ $this->currency ]['rate'] );
-								$refunded_orders->total_shipping     = self::convert_to_default_currency( $refunded_orders->total_shipping, $this->currencies[ $this->currency ]['rate'] );
-								$refunded_orders->total_tax          = self::convert_to_default_currency( $refunded_orders->total_tax, $this->currencies[ $this->currency ]['rate'] );
-								$refunded_orders->total_shipping_tax = self::convert_to_default_currency( $refunded_orders->total_shipping_tax, $this->currencies[ $this->currency ]['rate'] );
-								$refunded_orders->net_refund         = self::convert_to_default_currency( $refunded_orders->net_refund, $this->currencies[ $this->currency ]['rate'] );
+								$refunded_orders->total_refund       = self::convert_to_target_currency( $refunded_orders->total_refund, $this->currencies[ $this->currency ]['rate'] );
+								$refunded_orders->total_shipping     = self::convert_to_target_currency( $refunded_orders->total_shipping, $this->currencies[ $this->currency ]['rate'] );
+								$refunded_orders->total_tax          = self::convert_to_target_currency( $refunded_orders->total_tax, $this->currencies[ $this->currency ]['rate'] );
+								$refunded_orders->total_shipping_tax = self::convert_to_target_currency( $refunded_orders->total_shipping_tax, $this->currencies[ $this->currency ]['rate'] );
+								$refunded_orders->net_refund         = self::convert_to_target_currency( $refunded_orders->net_refund, $this->currencies[ $this->currency ]['rate'] );
 							}
 						}
 						if ( isset( $result->refund_lines ) && is_array( $result->refund_lines ) && count( $result->refund_lines ) ) {
 							foreach ( $result->refund_lines as $refund_lines ) {
-								$refund_lines->total_refund       = self::convert_to_default_currency( $refund_lines->total_refund, $this->currencies[ $this->currency ]['rate'] );
-								$refund_lines->total_shipping     = self::convert_to_default_currency( $refund_lines->total_shipping, $this->currencies[ $this->currency ]['rate'] );
-								$refund_lines->total_tax          = self::convert_to_default_currency( $refund_lines->total_tax, $this->currencies[ $this->currency ]['rate'] );
-								$refund_lines->total_shipping_tax = self::convert_to_default_currency( $refund_lines->total_shipping_tax, $this->currencies[ $this->currency ]['rate'] );
-								$refund_lines->total_sales        = self::convert_to_default_currency( $refund_lines->total_sales, $this->currencies[ $this->currency ]['rate'] );
+								$refund_lines->total_refund       = self::convert_to_target_currency( $refund_lines->total_refund, $this->currencies[ $this->currency ]['rate'] );
+								$refund_lines->total_shipping     = self::convert_to_target_currency( $refund_lines->total_shipping, $this->currencies[ $this->currency ]['rate'] );
+								$refund_lines->total_tax          = self::convert_to_target_currency( $refund_lines->total_tax, $this->currencies[ $this->currency ]['rate'] );
+								$refund_lines->total_shipping_tax = self::convert_to_target_currency( $refund_lines->total_shipping_tax, $this->currencies[ $this->currency ]['rate'] );
+								$refund_lines->total_sales        = self::convert_to_target_currency( $refund_lines->total_sales, $this->currencies[ $this->currency ]['rate'] );
 							}
 						}
-						$result->total_tax                   = self::convert_to_default_currency( $result->total_tax, $this->currencies[ $this->currency ]['rate'] );
-						$result->total_shipping              = self::convert_to_default_currency( $result->total_shipping, $this->currencies[ $this->currency ]['rate'] );
-						$result->total_shipping_tax          = self::convert_to_default_currency( $result->total_shipping_tax, $this->currencies[ $this->currency ]['rate'] );
-						$result->total_sales                 = self::convert_to_default_currency( $result->total_sales, $this->currencies[ $this->currency ]['rate'] );
-						$result->net_sales                   = self::convert_to_default_currency( $result->net_sales, $this->currencies[ $this->currency ]['rate'] );
-						$result->total_tax_refunded          = self::convert_to_default_currency( $result->total_tax_refunded, $this->currencies[ $this->currency ]['rate'] );
-						$result->total_shipping_refunded     = self::convert_to_default_currency( $result->total_shipping_refunded, $this->currencies[ $this->currency ]['rate'] );
-						$result->total_shipping_tax_refunded = self::convert_to_default_currency( $result->total_shipping_tax_refunded, $this->currencies[ $this->currency ]['rate'] );
-						$result->total_refunds               = self::convert_to_default_currency( $result->total_refunds, $this->currencies[ $this->currency ]['rate'] );
+						$result->total_tax                   = self::convert_to_target_currency( $result->total_tax, $this->currencies[ $this->currency ]['rate'] );
+						$result->total_shipping              = self::convert_to_target_currency( $result->total_shipping, $this->currencies[ $this->currency ]['rate'] );
+						$result->total_shipping_tax          = self::convert_to_target_currency( $result->total_shipping_tax, $this->currencies[ $this->currency ]['rate'] );
+						$result->total_sales                 = self::convert_to_target_currency( $result->total_sales, $this->currencies[ $this->currency ]['rate'] );
+						$result->net_sales                   = self::convert_to_target_currency( $result->net_sales, $this->currencies[ $this->currency ]['rate'] );
+						$result->total_tax_refunded          = self::convert_to_target_currency( $result->total_tax_refunded, $this->currencies[ $this->currency ]['rate'] );
+						$result->total_shipping_refunded     = self::convert_to_target_currency( $result->total_shipping_refunded, $this->currencies[ $this->currency ]['rate'] );
+						$result->total_shipping_tax_refunded = self::convert_to_target_currency( $result->total_shipping_tax_refunded, $this->currencies[ $this->currency ]['rate'] );
+						$result->total_refunds               = self::convert_to_target_currency( $result->total_refunds, $this->currencies[ $this->currency ]['rate'] );
 						$results[]                           = $result;
 						remove_filter( 'woocommerce_reports_get_order_report_data_args', array(
 							$this,
@@ -302,9 +310,9 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 							$this,
 							'woocommerce_reports_get_order_report_data'
 						), 10, 2 );
-						$this->total_sales = self::convert_to_default_currency( $total_sales, $this->currencies[ $this->currency ]['rate'] );
+						$this->total_sales = self::convert_to_target_currency( $total_sales, $this->currencies[ $this->currency ]['rate'] );
 					}
-				} elseif ( $report === 'sales_by_category' && ! empty( $_GET['show_categories'] ) ) {
+				} elseif ( $report === 'sales_by_category' && ! empty( $_REQUEST['show_categories'] ) ) {
 					$this->currency = $currency;
 					if ( isset( $this->currencies[ $this->currency ] ) ) {
 						include_once( WC()->plugin_path() . '/includes/admin/reports/class-wc-admin-report.php' );
@@ -346,7 +354,7 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 
 						if ( is_array( $order_items ) && count( $order_items ) ) {
 							foreach ( $order_items as $order_item ) {
-								$order_item->order_item_amount = self::convert_to_default_currency( $order_item->order_item_amount, $this->currencies[ $this->currency ]['rate'] );
+								$order_item->order_item_amount = self::convert_to_target_currency( $order_item->order_item_amount, $this->currencies[ $this->currency ]['rate'] );
 							}
 
 							$this->order_items = $order_items;
@@ -371,18 +379,23 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 	 *
 	 * @return float|int
 	 */
-	public static function convert_to_default_currency( $price, $rate ) {
-		return $price / $rate;
+	public static function convert_to_target_currency( $price, $rate ) {
+		$price = floatval( $price ) / floatval( $rate );
+		if ( self::$target_rate !== null ) {
+			$price = $price * self::$target_rate;
+		}
+
+		return $price;
 	}
 
 	/**
 	 *
 	 */
 	public function admin_footer() {
-		$currency          = isset( $_GET['wmc-currency'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_GET['wmc-currency'] ) ) ) : '';
-		$view_default      = isset( $_GET['wmc-view-default-currency'] ) ? sanitize_text_field( wp_unslash( $_GET['wmc-view-default-currency'] ) ) : '';
-		$request_uri       = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-		$view_default_link = $view_default === 'yes' ? remove_query_arg( 'wmc-view-default-currency', $request_uri ) : add_query_arg( array( 'wmc-view-default-currency' => 'yes' ), $request_uri );
+		$currency          = isset( $_REQUEST['wmc-currency'] ) ? strtoupper( wp_unslash( $_REQUEST['wmc-currency'] ) ) : '';
+		$target_currency   = isset( $_REQUEST['wmc-target-currency'] ) ? strtoupper( wp_unslash( $_REQUEST['wmc-target-currency'] ) ) : '';
+		$view_default      = isset( $_REQUEST['wmc-view-default-currency'] ) ? wp_unslash( $_REQUEST['wmc-view-default-currency'] ) : '';
+		$view_default_link = $view_default === 'yes' ? remove_query_arg( 'wmc-view-default-currency', $_SERVER['REQUEST_URI'] ) : add_query_arg( array( 'wmc-view-default-currency' => 'yes' ), $_SERVER['REQUEST_URI'] );
 		$links             = $this->settings->get_links();
 		$currency_name     = get_woocommerce_currencies();
 		?>
@@ -391,12 +404,20 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
                 <div class="wmc-currency">
                     <select class="wmc-nav"
                             onchange="this.options[this.selectedIndex].value && (window.location = this.options[this.selectedIndex].value);">
-                        <option value="<?php echo esc_url( remove_query_arg( 'wmc-currency', $request_uri ) ) ?>"><?php esc_html_e( 'All currencies', 'woo-multi-currency' ) ?></option>
 						<?php
 						foreach ( $links as $code => $link ) {
 							?>
+                            <option <?php selected( $target_currency, $code ) ?>
+                                    value="<?php echo remove_query_arg( array(
+										'wmc-currency',
+										'wmc-view-default-currency'
+									), add_query_arg( array( 'wmc-target-currency' => $code ), $_SERVER['REQUEST_URI'] ) ) ?>"><?php echo esc_html( "All currencies(to {$code})" ) ?></option>
+							<?php
+						}
+						foreach ( $links as $code => $link ) {
+							?>
                             <option <?php selected( $currency, $code ) ?>
-                                    value="<?php echo esc_url( $link ) ?>"><?php echo esc_html( $currency_name[ $code ] ) ?></option>
+                                    value="<?php echo esc_url( remove_query_arg( array( 'wmc-target-currency' ), $link ) ) ?>"><?php echo esc_html( $currency_name[ $code ] ) ?></option>
 							<?php
 						}
 						?>
@@ -410,8 +431,8 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
             <li class="wmc-view-default-currency-container">
                 <input id="wmc-view-default-currency" type="checkbox"
                        value="yes" <?php checked( $view_default, 'yes' ) ?>
-                       data-report_link="<?php echo esc_url( $view_default_link ) ?>"><label
-                        for="wmc-view-default-currency"><?php esc_html_e( 'View in default currency', 'woo-multi-currency' ) ?></label>
+                       data-report_link="<?php esc_attr_e( remove_query_arg( array( 'wmc-target-currency' ), $view_default_link ) ) ?>"><label
+                        for="wmc-view-default-currency"><?php printf( esc_html__( 'View in default currency(%s)', 'woocommerce-multi-currency' ), $this->default_currency ) ?></label>
             </li>
 			<?php
 		}
@@ -494,7 +515,7 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 							$rate = $this->currencies[ $_order_currency ]['rate'];
 						}
 						if ( $rate > 0 ) {
-							$value->sparkline_value = self::convert_to_default_currency( $value->sparkline_value, $rate );
+							$value->sparkline_value = self::convert_to_target_currency( $value->sparkline_value, $rate );
 						}
 					}
 				}
@@ -536,9 +557,22 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 						if ( $rate > 0 ) {
 							foreach ( $data_obj as $data_obj_k => $data_obj_v ) {
 								if ( ! in_array( $data_obj_k, array( 'post_date', 'order_id', 'refund_id' ) ) ) {
-									$data_obj->{$data_obj_k} = self::convert_to_default_currency( $data_obj_v, $rate );
+									$data_obj->{$data_obj_k} = self::convert_to_target_currency( $data_obj_v, $rate );
 								}
 							}
+						}
+					} elseif ( self::$target_rate !== null ) {
+						if ( isset( $data_obj->total_sales ) ) {
+							$data_obj->total_sales *= self::$target_rate;
+						}
+						if ( isset( $data_obj->total_shipping ) ) {
+							$data_obj->total_shipping *= self::$target_rate;
+						}
+						if ( isset( $data_obj->total_tax ) ) {
+							$data_obj->total_tax *= self::$target_rate;
+						}
+						if ( isset( $data_obj->total_shipping_tax ) ) {
+							$data_obj->total_shipping_tax *= self::$target_rate;
 						}
 					}
 				}
@@ -645,11 +679,20 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 	 * @return int
 	 */
 	public function wc_get_price_decimals( $decimal ) {
-		$view_default = isset( $_GET['wmc-view-default-currency'] ) ? sanitize_text_field( wp_unslash( $_GET['wmc-view-default-currency'] ) ) : '';
-		if ( is_admin() && ! empty( $_GET['wmc-currency'] ) && $view_default !== 'yes' ) {
-			$currency = strtoupper( sanitize_text_field( wp_unslash( $_GET['wmc-currency'] ) ) );
+		$view_default = isset( $_REQUEST['wmc-view-default-currency'] ) ? wp_unslash( $_REQUEST['wmc-view-default-currency'] ) : '';
+
+		if ( is_admin() && ! empty( $_REQUEST['wmc-currency'] ) && $view_default !== 'yes' ) {
+			$currency = strtoupper( wp_unslash( $_REQUEST['wmc-currency'] ) );
 			if ( $currency !== $this->default_currency ) {
 				$decimal = isset( $this->currencies[ $currency ]['decimals'] ) ? $this->currencies[ $currency ]['decimals'] : 0;
+			}
+
+		}
+
+		if ( is_admin() ) {
+			if ( $this->in_shop_order ) {
+				$currency = $this->in_shop_order->get_currency();
+				$decimal  = isset( $this->currencies[ $currency ]['decimals'] ) ? $this->currencies[ $currency ]['decimals'] : 0;
 			}
 		}
 
@@ -663,11 +706,20 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 	 * @return string
 	 */
 	public function woocommerce_currency( $woocommerce_currency ) {
-		$view_default = isset( $_GET['wmc-view-default-currency'] ) ? sanitize_text_field( wp_unslash( $_GET['wmc-view-default-currency'] ) ) : '';
-		$currency     = isset( $_GET['wmc-currency'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_GET['wmc-currency'] ) ) ) : '';
-		if ( is_admin() && ! empty( $_GET['wmc-currency'] ) && $view_default !== 'yes' ) {
-			if ( $currency !== $this->default_currency ) {
-				$woocommerce_currency = $currency;
+		global $pagenow;
+		$page = isset( $_REQUEST['page'] ) ? sanitize_text_field( $_REQUEST['page'] ) : '';
+		if ( $pagenow === 'admin.php' && $page === 'wc-reports' ) {
+			$view_default = isset( $_REQUEST['wmc-view-default-currency'] ) ? wp_unslash( $_REQUEST['wmc-view-default-currency'] ) : '';
+			$currency     = isset( $_REQUEST['wmc-currency'] ) ? strtoupper( wp_unslash( $_REQUEST['wmc-currency'] ) ) : '';
+			if ( $currency && $view_default !== 'yes' ) {
+				if ( $currency !== $this->default_currency ) {
+					$woocommerce_currency = $currency;
+				}
+			} elseif ( isset( $_REQUEST['wmc-target-currency'] ) ) {
+				$target_currency = strtoupper( wp_unslash( $_REQUEST['wmc-target-currency'] ) );
+				if ( $target_currency !== $this->default_currency ) {
+					$woocommerce_currency = $target_currency;
+				}
 			}
 		}
 
@@ -697,9 +749,9 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 				$this->is_dashboard = true;
 			}
 		} else {
-			$report   = isset( $_GET['report'] ) ? sanitize_text_field( wp_unslash( $_GET['report'] ) ) : '';
-			$tab      = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'orders';
-			$currency = isset( $_GET['wmc-currency'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_GET['wmc-currency'] ) ) ) : '';
+			$report   = isset( $_REQUEST['report'] ) ? wp_unslash( $_REQUEST['report'] ) : '';
+			$tab      = isset( $_REQUEST['tab'] ) ? wp_unslash( $_REQUEST['tab'] ) : 'orders';
+			$currency = isset( $_REQUEST['wmc-currency'] ) ? strtoupper( wp_unslash( $_REQUEST['wmc-currency'] ) ) : '';
 			if ( $currency ) {
 				if ( $currency !== $this->default_currency ) {
 					$args['nocache'] = true;
@@ -716,5 +768,9 @@ class WOOMULTI_CURRENCY_F_Admin_Reports {
 		}
 
 		return $args;
+	}
+
+	public function woocommerce_admin_order_item_headers( $order ) {
+		$this->in_shop_order = $order;
 	}
 }

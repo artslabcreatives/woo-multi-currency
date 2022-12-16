@@ -4,14 +4,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_Name_Your_Price
+ * Class WOOMULTI_CURRENCY_Plugin_WooCommerce_Name_Your_Price
  * WooCommerce TM Extra Product Options By ThemeComplete
  */
-class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_Name_Your_Price {
+class WOOMULTI_CURRENCY_Plugin_WooCommerce_Name_Your_Price {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() && is_plugin_active( 'woocommerce-name-your-price/woocommerce-name-your-price.php' ) ) {
 			add_action( 'init', array( $this, 'init_hooks' ) );
 		}

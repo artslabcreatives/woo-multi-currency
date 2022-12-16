@@ -1,17 +1,17 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_LearnPress
+ * Class WOOMULTI_CURRENCY_Plugin_LearnPress
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_LearnPress {
+class WOOMULTI_CURRENCY_Plugin_LearnPress {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			if ( is_plugin_active( 'learnpress/learnpress.php' ) ) {
 				if ( version_compare( learn_press_get_current_version(), '4.1.5', '>=' ) ) {

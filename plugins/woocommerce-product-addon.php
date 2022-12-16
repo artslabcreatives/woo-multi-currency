@@ -7,11 +7,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_Woocommerce_Product_Addon {
+class WOOMULTI_CURRENCY_Plugin_Woocommerce_Product_Addon {
 	protected static $settings;
 
 	public function __construct() {
-		self::$settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		self::$settings = WOOMULTI_CURRENCY_Data::get_ins();
 		add_filter( 'ppom_product_price_on_cart', array( $this, 'ppom_product_price_on_cart' ), 10, 2 );
 		add_filter( 'ppom_product_price', array( $this, 'ppom_product_price' ), 10, 2 );
 		add_filter( 'ppom_option_price', array( $this, 'ppom_option_price' ), 10 );

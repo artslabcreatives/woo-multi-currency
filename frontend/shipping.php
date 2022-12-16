@@ -4,31 +4,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class WOOMULTI_CURRENCY_F_Frontend_Shipping
+ * Class WOOMULTI_CURRENCY_Frontend_Shipping
  */
-class WOOMULTI_CURRENCY_F_Frontend_Shipping {
+class WOOMULTI_CURRENCY_Frontend_Shipping {
 	protected $settings;
 	protected $cache = array();
+	protected $fee_cost;
 
-	function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+	public function __construct() {
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			global $wpdb;
 			$raw_methods_sql = "SELECT method_id, method_order, instance_id, is_enabled FROM {$wpdb->prefix}woocommerce_shipping_zone_methods WHERE method_id = 'betrs_shipping' AND is_enabled = 1 order by instance_id ASC;";
 			$raw_methods     = $wpdb->get_results( $raw_methods_sql );
 			if ( count( $raw_methods ) ) {
 				foreach ( $raw_methods as $method ) {
-					add_filter( 'option_betrs_shipping_options-' . intval( $method->instance_id ), array(
-						$this,
-						'table_rate_shipping'
-					) );
+					add_filter( 'option_betrs_shipping_options-' . intval( $method->instance_id ), array( $this, 'table_rate_shipping' ) );
 				}
 			}
 			add_filter( 'woocommerce_package_rates', array( $this, 'woocommerce_package_rates' ), 10, 2 );
-			add_filter( 'woocommerce_shipping_free_shipping_instance_option', array(
-				$this,
-				'woocommerce_shipping_free_shipping_instance_option'
-			), 10, 3 );
+			add_filter( 'woocommerce_shipping_free_shipping_instance_option', array( $this, 'woocommerce_shipping_free_shipping_instance_option' ), 10, 3 );
 		}
 	}
 
@@ -49,7 +44,11 @@ class WOOMULTI_CURRENCY_F_Frontend_Shipping {
 				$default_currency = $this->settings->get_default_currency();
 				$currency         = $this->settings->get_current_currency();
 				if ( $currency !== $default_currency ) {
-					$value = wmc_get_price( $instance->instance_settings["min_amount"] );
+					if ( $this->settings->check_fixed_price() && isset( $instance->instance_settings["min_amount_{$currency}"] ) && $instance->instance_settings["min_amount_{$currency}"] !== '' ) {
+						$value = $instance->instance_settings["min_amount_{$currency}"];
+					} else {
+						$value = wmc_get_price( $instance->instance_settings["min_amount"] );
+					}
 				}
 			}
 		}
@@ -58,48 +57,32 @@ class WOOMULTI_CURRENCY_F_Frontend_Shipping {
 	}
 
 	/**
-	 * Table rate shipping
-	 *
-	 * @param $options
-	 *
-	 * @return mixed
-	 */
-	public function table_rate_shipping( $options ) {
-		$new_options = $options;
-		if ( ! empty( $new_options ) ) {
-			// step through each table rate row
-			foreach ( $new_options['settings'] as $o_key => $option ) {
-				foreach ( $option['rows'] as $r_key => $row ) {
-					$costs = $row['costs'];
-					if ( is_array( $costs ) ) {
-						foreach ( $costs as $k => $cost ) {
-							switch ( $cost['cost_type'] ) {
-								case '%':
-									break;
-								default:
-									$options['settings'][ $o_key ]['rows'][ $r_key ]['costs'][ $k ]['cost_value'] = wmc_get_price( $cost['cost_value'] );
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return $options;
-	}
-
-	/**
-	 * Convert shipping cost
+	 * Handle shipping cost
 	 *
 	 * @param $methods
+	 * @param $package
 	 *
 	 * @return mixed
 	 */
 	public function woocommerce_package_rates( $methods, $package ) {
-		$currency = $this->settings->get_current_currency();
+		$currency              = $this->settings->get_current_currency();
+		$beauty_price_shipping = $this->settings->get_params( 'beauty_price_shipping' );
 		if ( $currency === $this->settings->get_default_currency() ) {
+//			if ( $beauty_price_shipping ) {
+//				foreach ( $methods as $k => $method ) {
+//					$cost = apply_filters( 'wmc_get_price', $method->get_cost(), $currency );
+//					$method->set_cost( $cost );
+//					if ( count( $method->get_taxes() ) ) {
+//						$taxes = WC_Tax::calc_shipping_tax( $cost, WC_Tax::get_shipping_tax_rates() );
+//						$method->set_taxes( $taxes );
+//					}
+//				}
+//			}
+
 			return $methods;
 		}
+		$check_fixed_price = $this->settings->check_fixed_price();
+
 		if ( count( array_filter( $methods ) ) ) {
 			foreach ( $methods as $k => $method ) {
 				if ( in_array( $method->method_id, apply_filters( 'wmc_excluded_shipping_methods_from_converting',
@@ -112,11 +95,92 @@ class WOOMULTI_CURRENCY_F_Frontend_Shipping {
 						'easyship',
 						'printful_shipping_PRINTFUL_SLOW',
 						'printful_shipping_STANDARD',
-						'printful_shipping_PRINTFUL_MEDIUM'
+						'printful_shipping_PRINTFUL_MEDIUM',
+						'myfatoorah_shipping',
 					) ) ) ) {
+//					if ( $beauty_price_shipping ) {
+//						$cost = apply_filters( 'wmc_get_price', $method->get_cost(), $currency );
+//						$method->set_cost( $cost );
+//						if ( count( $method->get_taxes() ) ) {
+//							$taxes = WC_Tax::calc_shipping_tax( $cost, WC_Tax::get_shipping_tax_rates() );
+//							$method->set_taxes( $taxes );
+//						}
+//					}
 					continue;
 				}
 				if ( $method->method_id === 'flat_rate' ) {
+					if ( $check_fixed_price ) {
+						$has_costs = false; // True when a cost is set. False if all costs are blank strings.
+						$shipping  = new WC_Shipping_Flat_Rate( $method->instance_id );
+						// Calculate the costs.
+						$cost         = $shipping->get_option( "cost_{$currency}" );
+						$rate['cost'] = 0;
+						if ( '' !== $cost || '' === $shipping->get_option( 'cost' ) ) {
+							$has_costs    = true;
+							$rate['cost'] = $this->evaluate_cost(
+								$cost, array(
+								'qty'  => $shipping->get_package_item_qty( $package ),
+								'cost' => $package['contents_cost'],
+							) );//, $shipping
+							// Add shipping class costs.
+							$shipping_classes = WC()->shipping()->get_shipping_classes();
+							if ( ! empty( $shipping_classes ) ) {
+								$found_shipping_classes = $shipping->find_shipping_classes( $package );
+								$highest_class_cost     = 0;
+
+								foreach ( $found_shipping_classes as $shipping_class => $products ) {
+									// Also handles BW compatibility when slugs were used instead of ids.
+									$shipping_class_term = get_term_by( 'slug', $shipping_class, 'product_shipping_class' );
+									if ( $shipping_class_term && $shipping_class_term->term_id ) {
+										$class_cost_string = $shipping->get_option( "class_cost_{$shipping_class_term->term_id}_{$currency}", $shipping->get_option( "class_cost_{$shipping_class}_{$currency}", '' ) );
+									} else {
+										$class_cost_string = $shipping->get_option( "no_class_cost_{$currency}", '' );
+									}
+
+									if ( '' === $class_cost_string ) {
+										$original_class_cost_string = $shipping_class_term && $shipping_class_term->term_id ? $shipping->get_option( 'class_cost_' . $shipping_class_term->term_id, $shipping->get_option( 'class_cost_' . $shipping_class, '' ) ) : $shipping->get_option( 'no_class_cost', '' );
+										if ( $original_class_cost_string === '' ) {
+											continue;
+										} else {
+											$has_costs = false;
+											break;
+										}
+									}
+
+									$class_cost = $this->evaluate_cost(
+										$class_cost_string, array(
+										'qty'  => array_sum( wp_list_pluck( $products, 'quantity' ) ),
+										'cost' => array_sum( wp_list_pluck( $products, 'line_total' ) ),
+									) );
+
+									if ( 'class' === $shipping->type ) {
+										$rate['cost'] += $class_cost;
+									} else {
+										$highest_class_cost = $class_cost > $highest_class_cost ? $class_cost : $highest_class_cost;
+									}
+								}
+								if ( $has_costs ) {
+									if ( 'order' === $shipping->type && $highest_class_cost ) {
+										$rate['cost'] += $highest_class_cost;
+									}
+								}
+							}
+						}
+						if ( $has_costs ) {
+							$cost = $rate['cost'];
+//							if ( $beauty_price_shipping ) {
+//								$cost = apply_filters( 'wmc_get_price', $cost, $currency );
+//							}
+							$method->set_cost( $cost );
+							if ( count( $method->get_taxes() ) ) {
+								$taxes = WC_Tax::calc_shipping_tax( $cost, WC_Tax::get_shipping_tax_rates() );
+								$method->set_taxes( $taxes );
+							}
+							continue;
+						}
+					}
+
+					/*Convert shipping cost when fixed price is disabled or not used*/
 					$shipping = new WC_Shipping_Flat_Rate( $method->instance_id );
 					// Calculate the costs.
 					$cost         = $shipping->get_option( 'cost' );
@@ -164,9 +228,11 @@ class WOOMULTI_CURRENCY_F_Frontend_Shipping {
 					}
 
 					if ( $has_costs ) {
-						$cost = wmc_get_price( $rate['cost'] );
+						$cost = wmc_get_price_shipping( $rate['cost'] );
 						$method->set_cost( $cost );
 						if ( count( $method->get_taxes() ) ) {
+//						$taxes = WC_Tax::calc_shipping_tax( $cost, WC_Tax::get_shipping_tax_rates() );
+//						$method->set_taxes( $taxes );
 							$new_tax = array();
 							foreach ( $method->get_taxes() as $tax_k => $tax ) {
 								$new_tax[ $tax_k ] = wmc_get_price( $tax, false, true );
@@ -175,18 +241,29 @@ class WOOMULTI_CURRENCY_F_Frontend_Shipping {
 						}
 					}
 				} else {
-					if ( isset( $this->cache[ $k ] ) && $this->cache[ $k ] && $k ) {
-						$method->set_cost( $this->cache[ $k ] );
+					if ( isset( $this->cache[ $k ] ) ) {
+						$method->set_cost( $this->cache[ $k ]['cost'] );
+						if ( $this->cache[ $k ]['taxes'] !== false ) {
+							$method->set_taxes( $this->cache[ $k ]['taxes'] );
+						}
 					} else {
-						$cost = wmc_get_price( $method->cost );
+						$cost = wmc_get_price_shipping( $method->cost );
 						$method->set_cost( $cost );
+						$cached_shipping = array(
+							'cost'  => $cost,
+							'taxes' => false,
+						);
 						if ( count( $method->get_taxes() ) ) {
+//						$taxes = WC_Tax::calc_shipping_tax( $cost, WC_Tax::get_shipping_tax_rates() );
+//						$method->set_taxes( $taxes );
 							$new_tax = array();
 							foreach ( $method->get_taxes() as $tax_k => $tax ) {
 								$new_tax[ $tax_k ] = wmc_get_price( $tax, false, true );
 							}
 							$method->set_taxes( $new_tax );
+							$cached_shipping['taxes'] = $new_tax;
 						}
+						$this->cache[ $k ] = $cached_shipping;
 					}
 				}
 			}
@@ -268,5 +345,36 @@ class WOOMULTI_CURRENCY_F_Frontend_Shipping {
 		}
 
 		return $calculated_fee;
+	}
+
+	/**
+	 * Table rate shipping
+	 *
+	 * @param $options
+	 *
+	 * @return mixed
+	 */
+	public function table_rate_shipping( $options ) {
+		$new_options = $options;
+		if ( ! empty( $new_options ) ) {
+			// step through each table rate row
+			foreach ( $new_options['settings'] as $o_key => $option ) {
+				foreach ( $option['rows'] as $r_key => $row ) {
+					$costs = $row['costs'];
+					if ( is_array( $costs ) ) {
+						foreach ( $costs as $k => $cost ) {
+							switch ( $cost['cost_type'] ) {
+								case '%':
+									break;
+								default:
+									$options['settings'][ $o_key ]['rows'][ $r_key ]['costs'][ $k ]['cost_value'] = wmc_get_price( $cost['cost_value'] );
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return $options;
 	}
 }

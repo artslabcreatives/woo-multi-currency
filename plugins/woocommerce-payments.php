@@ -1,17 +1,17 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_Payments
+ * Class WOOMULTI_CURRENCY_Plugin_WooCommerce_Payments
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_Payments {
+class WOOMULTI_CURRENCY_Plugin_WooCommerce_Payments {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			$list_currencies = $this->settings->get_list_currencies();
 			if ( count( $list_currencies ) ) {

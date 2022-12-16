@@ -1,17 +1,17 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_Bookings
+ * Class WOOMULTI_CURRENCY_Plugin_WooCommerce_Bookings
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_Bookings {
+class WOOMULTI_CURRENCY_Plugin_WooCommerce_Bookings {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			add_filter( 'woocommerce_bookings_calculated_booking_cost_success_output', array(
 				$this,
@@ -111,7 +111,7 @@ class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_Bookings {
 		} else {
 			$price_suffix = $product->get_price_suffix();
 		}
-		$output        = apply_filters( 'woocommerce_bookings_booking_cost_string', esc_html__( 'Booking cost', 'woocommerce-bookings' ), $product ) . ': <strong>' . wc_price( $display_price, array(
+		$output        = apply_filters( 'woocommerce_bookings_booking_cost_string', __( 'Booking cost', 'woocommerce-bookings' ), $product ) . ': <strong>' . wc_price( $display_price, array(
 				'currency' => $this->settings->get_current_currency(),
 			) ) . $price_suffix . '</strong>';
 

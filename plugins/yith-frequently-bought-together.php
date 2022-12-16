@@ -1,17 +1,17 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_Yith_Frequently_Bought_Together
+ * Class WOOMULTI_CURRENCY_Plugin_Yith_Frequently_Bought_Together
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_Yith_Frequently_Bought_Together {
+class WOOMULTI_CURRENCY_Plugin_Yith_Frequently_Bought_Together {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			add_filter( 'woocommerce_coupon_get_amount', array( $this, 'woocommerce_coupon_get_amount' ), 20, 2 );
 			add_filter( 'yith_wfbt_total_html', array(

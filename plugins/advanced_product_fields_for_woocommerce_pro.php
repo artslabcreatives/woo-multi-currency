@@ -1,14 +1,26 @@
 <?php
+/**Advanced Product Fields For Woocommerce Pro
+ * Author: StudioWombat
+ * Class WOOMULTI_CURRENCY_Plugin_Advanced_Product_Fields_For_Woocommerce_Pro
+ */
 
 use SW_WAPF_PRO\Includes\Classes\Cart;
 
-class WOOMULTI_CURRENCY_F_Plugin_Advanced_Product_Fields_For_Woocommerce_Pro {
+class WOOMULTI_CURRENCY_Plugin_Advanced_Product_Fields_For_Woocommerce_Pro {
 	protected $settings;
 
 	public function __construct() {
-		if ( is_plugin_active( 'advanced-product-fields-for-woocommerce-pro/advanced-product-fields-for-woocommerce-pro.php' ) ) {
-			$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
-			add_action( 'woocommerce_before_calculate_totals', array( $this, 'recalculate_pricing' ), 9 );
+		if ( is_plugin_active( 'advanced-product-fields-for-woocommerce-pro/advanced-product-fields-for-woocommerce-pro.php' )
+		     || class_exists( '\SW_WAPF_PRO\WAPF' ) ) {
+
+			$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
+
+			$v = wapf_get_setting( 'version' );
+
+			if ( version_compare( $v, '1.9.10', '<' ) ) {
+				add_action( 'woocommerce_before_calculate_totals', array( $this, 'recalculate_pricing' ), 9 );
+			}
+
 			add_filter( 'wapf/pricing/addon', array( $this, 'convert_product_price' ), 10, 2 );
 //
 //			add_filter( 'wapf/html/pricing_hint/amount', array( $this, 'convert_pricing_hint' ), 10, 3 );
@@ -57,7 +69,7 @@ class WOOMULTI_CURRENCY_F_Plugin_Advanced_Product_Fields_For_Woocommerce_Pro {
 		}
 		?>
         <script>
-            var wapf_wmc_rate = <?php echo esc_html( $this->get_current_currency_rate() ); ?>;
+            var wapf_wmc_rate = <?php echo $this->get_current_currency_rate(); ?>;
 
             jQuery(document).on('wapf/pricing', function (e, productTotal, optionsTotal, total, $parent) {
                 var rawBase = jQuery('.wapf-product-totals').data('wmc-price') * WAPF.Util.selectedQuantity($parent);
@@ -127,7 +139,7 @@ class WOOMULTI_CURRENCY_F_Plugin_Advanced_Product_Fields_For_Woocommerce_Pro {
 		$current_currency = $this->settings->get_current_currency();
 		$product_price    = wmc_adjust_fixed_price( json_decode( get_post_meta( $product->get_id(), '_regular_price_wmcp', true ), true ) );
 		$sale_price       = wmc_adjust_fixed_price( json_decode( get_post_meta( $product->get_id(), '_sale_price_wmcp', true ), true ) );
-		if ( isset( $product_price[ $current_currency ] ) && ! WOOMULTI_CURRENCY_F_Frontend_Price::is_on_sale( $product ) ) {
+		if ( isset( $product_price[ $current_currency ] ) && ! WOOMULTI_CURRENCY_Frontend_Price::is_on_sale( $product ) ) {
 			if ( $product_price[ $current_currency ] > 0 ) {
 				return true;
 			}

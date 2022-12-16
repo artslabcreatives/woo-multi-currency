@@ -1,17 +1,17 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Frontend_Cart
+ * Class WOOMULTI_CURRENCY_Frontend_Cart
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Frontend_Cart {
+class WOOMULTI_CURRENCY_Frontend_Cart {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() ) {
 			/*Fix round function with case default decimals = 0 and other currency decimal > 0*/
 			add_filter( 'woocommerce_calculated_total', array( $this, 'woocommerce_calculated_total' ), 10, 2 );
@@ -35,10 +35,9 @@ class WOOMULTI_CURRENCY_F_Frontend_Cart {
 		if ( $list_currencies[ $current_currency ]['decimals'] ) {
 			$new_total = $cart->get_cart_contents_total() + $cart->get_fee_total() + $cart->get_shipping_total() + $cart->get_total_tax();
 			if ( $new_total > $total ) {
-				$total = number_format( $new_total, $list_currencies[ $current_currency ]['decimals'], wc_get_price_decimal_separator(), '' );
+				$total = number_format( $new_total, (int) $list_currencies[ $current_currency ]['decimals'], wc_get_price_decimal_separator(), '' );
 			}
 		}
-
 		return $total;
 	}
 }

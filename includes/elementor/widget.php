@@ -20,7 +20,7 @@ class WOOMULTI_CURRENCY_Elementor_Widget extends Widget_Base {
 		wp_register_style( 'wmc-elementor-style', false );
 		wp_enqueue_style( 'wmc-elementor-style' );
 		$css = ".wmc-multi-currency-icon{
-				display:block;height:28px;background-image: url('" . WOOMULTI_CURRENCY_F_IMAGES . "icon_elementor.svg');
+				display:block;height:28px;background-image: url('" . WOOMULTI_CURRENCY_IMAGES . "icon_elementor.svg');
 				background-position: center; background-repeat: no-repeat;background-size: contain;}";
 		wp_add_inline_style( 'wmc-elementor-style', $css );
 	}
@@ -30,7 +30,7 @@ class WOOMULTI_CURRENCY_Elementor_Widget extends Widget_Base {
 	}
 
 	public function get_title() {
-		return esc_html__( 'Multi Currency', 'woo-multi-currency' );
+		return __( 'Multi Currency', 'woocommerce-multi-currency' );
 	}
 
 	public function get_icon() {
@@ -45,7 +45,7 @@ class WOOMULTI_CURRENCY_Elementor_Widget extends Widget_Base {
 		$this->start_controls_section(
 			'general',
 			[
-				'label' => esc_html__( 'General', 'woo-multi-currency' ),
+				'label' => __( 'General', 'woocommerce-multi-currency' ),
 				'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
 			]
 		);
@@ -53,21 +53,21 @@ class WOOMULTI_CURRENCY_Elementor_Widget extends Widget_Base {
 		$this->add_control(
 			'layout',
 			[
-				'label'       => esc_html__( 'Select switcher layout', 'woo-multi-currency' ),
+				'label'       => __( 'Select switcher layout', 'woocommerce-multi-currency' ),
 				'type'        => \Elementor\Controls_Manager::SELECT,
 				'label_block' => true,
 				'options'     => [
-					''                 => esc_html__( 'Default', 'woo-multi-currency' ),
-					'plain_horizontal' => esc_html__( 'Plain Horizontal', 'woo-multi-currency' ),
-					'plain_vertical'   => esc_html__( 'Plain Vertical', 'woo-multi-currency' ),
-					'plain_vertical_2' => esc_html__( 'Listbox currency code', 'woo-multi-currency' ),
-					'layout3'          => esc_html__( 'List Flag Horizontal', 'woo-multi-currency' ),
-					'layout4'          => esc_html__( 'List Flag Vertical', 'woo-multi-currency' ),
-					'layout5'          => esc_html__( 'List Flag + Currency Code', 'woo-multi-currency' ),
-					'layout6'          => esc_html__( 'Horizontal Currency Symbols', 'woo-multi-currency' ),
-					'layout9'          => esc_html__( 'Horizontal Currency Slide', 'woo-multi-currency' ),
-					'layout7'          => esc_html__( 'Vertical Currency Symbols', 'woo-multi-currency' ),
-					'layout8'          => esc_html__( 'Vertical Currency Symbols (circle)', 'woo-multi-currency' ),
+					''                 => esc_html__( 'Default', 'woocommerce-multi-currency' ),
+					'plain_horizontal' => esc_html__( 'Plain Horizontal', 'woocommerce-multi-currency' ),
+					'plain_vertical'   => esc_html__( 'Plain Vertical', 'woocommerce-multi-currency' ),
+					'plain_vertical_2' => esc_html__( 'Listbox currency code', 'woocommerce-multi-currency' ),
+					'layout3'          => esc_html__( 'List Flag Horizontal', 'woocommerce-multi-currency' ),
+					'layout4'          => esc_html__( 'List Flag Vertical', 'woocommerce-multi-currency' ),
+					'layout5'          => esc_html__( 'List Flag + Currency Code', 'woocommerce-multi-currency' ),
+					'layout6'          => esc_html__( 'Horizontal Currency Symbols', 'woocommerce-multi-currency' ),
+					'layout9'          => esc_html__( 'Horizontal Currency Slide', 'woocommerce-multi-currency' ),
+					'layout7'          => esc_html__( 'Vertical Currency Symbols', 'woocommerce-multi-currency' ),
+					'layout8'          => esc_html__( 'Vertical Currency Symbols (circle)', 'woocommerce-multi-currency' ),
 				],
 			]
 		);
@@ -75,7 +75,7 @@ class WOOMULTI_CURRENCY_Elementor_Widget extends Widget_Base {
 		$this->add_control(
 			'flag_size',
 			[
-				'label'     => esc_html__( 'Flag size', 'woo-multi-currency' ),
+				'label'     => __( 'Flag size', 'woocommerce-multi-currency' ),
 				'type'      => \Elementor\Controls_Manager::NUMBER,
 				'min'       => 0,
 				'max'       => 1,
@@ -94,7 +94,7 @@ class WOOMULTI_CURRENCY_Elementor_Widget extends Widget_Base {
 		$settings  = $this->get_settings_for_display();
 		$layout    = $settings['layout'] ? '_' . $settings['layout'] : '';
 		$flag_size = $settings['flag_size'] ? 'flag_size=' . $settings['flag_size'] : '';
-		echo WOOMULTI_CURRENCY_F_Data::wp_kses_post( do_shortcode( "[woo_multi_currency{$layout} $flag_size]" ) );
+		echo do_shortcode( "[woo_multi_currency{$layout} $flag_size]" );
 	}
 
 	public function render_plain_content() {
@@ -102,6 +102,6 @@ class WOOMULTI_CURRENCY_Elementor_Widget extends Widget_Base {
 		$layout    = $settings['layout'] ? '_' . $settings['layout'] : '';
 		$flag_size = $settings['flag_size'] ? 'flag_size=' . $settings['flag_size'] : '';
 		$shortcode = "[woo_multi_currency{$layout} $flag_size]";
-		echo WOOMULTI_CURRENCY_F_Data::wp_kses_post( $shortcode );
+		echo $shortcode;
 	}
 }

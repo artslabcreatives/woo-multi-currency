@@ -5,14 +5,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_Woo_Discount_Rules
+ * Class WOOMULTI_CURRENCY_Plugin_Woo_Discount_Rules
  */
-class WOOMULTI_CURRENCY_F_Plugin_Woo_Discount_Rules {
+class WOOMULTI_CURRENCY_Plugin_Woo_Discount_Rules {
 	protected $settings;
 	protected $convert;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		$this->convert  = false;
 		if ( $this->settings->get_enable() && is_plugin_active( 'woo-discount-rules/woo-discount-rules.php' ) ) {
 			add_action( 'admin_notices', array(
@@ -44,7 +44,40 @@ class WOOMULTI_CURRENCY_F_Plugin_Woo_Discount_Rules {
 				$this,
 				'convert_fixed_discount_table'
 			), 10, 3 );
+			add_action( 'wmc_before_force_recalculate_totals', array(
+				$this,
+				'wmc_before_force_recalculate_totals'
+			) );
+			add_action( 'wmc_after_force_recalculate_totals', array(
+				$this,
+				'wmc_after_force_recalculate_totals'
+			) );
 		}
+	}
+
+	public function wmc_before_force_recalculate_totals() {
+		add_filter( 'advanced_woo_discount_rules_run_discount_rules', array(
+			$this,
+			'advanced_woo_discount_rules_run_discount_rules'
+		) );
+	}
+
+	public function wmc_after_force_recalculate_totals() {
+		remove_filter( 'advanced_woo_discount_rules_run_discount_rules', array(
+			$this,
+			'advanced_woo_discount_rules_run_discount_rules'
+		) );
+	}
+
+	/**
+     * Prevent a discount from being applied twice when using WC()->cart->recalculate_totals()
+     *
+	 * @param $apply
+	 *
+	 * @return bool
+	 */
+	public function advanced_woo_discount_rules_run_discount_rules( $apply ) {
+		return false;
 	}
 
 	public function convert_fixed_discount_table( $response_ranges, $rules, $product ) {
@@ -61,20 +94,6 @@ class WOOMULTI_CURRENCY_F_Plugin_Woo_Discount_Rules {
 		return $response_ranges;
 	}
 
-	public function advanced_woo_discount_rules_get_regular_price( $price, $product ) {
-		if ( $product && $this->settings->check_fixed_price() ) {
-			$current_currency = $this->settings->get_current_currency();
-			if ( $current_currency !== $this->settings->get_default_currency() ) {
-				$fixed_price = wmc_adjust_fixed_price( json_decode( get_post_meta( $product->get_id(), '_regular_price_wmcp', true ), true ) );
-				if ( isset( $fixed_price[ $current_currency ] ) && $fixed_price[ $current_currency ] > 0 ) {
-					$price = $fixed_price[ $current_currency ];
-				}
-			}
-		}
-
-		return $price;
-	}
-
 	public function admin_notices() {
 		if ( class_exists( 'Wdr\App\Controllers\Configuration' ) ) {
 			$advanced_config = new Wdr\App\Controllers\Configuration();
@@ -82,7 +101,7 @@ class WOOMULTI_CURRENCY_F_Plugin_Woo_Discount_Rules {
 				?>
                 <div class="notice notice-error">
                     <p>
-						<?php printf( WOOMULTI_CURRENCY_F_Data::wp_kses_post( __( '<strong>Multi Currency for WooCommerce and Woo Discount Rules compatibility issue</strong>: To make the two plugins work properly, please go to <a href="%s">Woo Discount Rules/Settings/Third party plugin conflict fixes & options</a> and check the "No" checkbox next to "Do you have custom prices set using another plugin or custom code?"', 'woo-multi-currency' ) ), esc_url( admin_url( 'admin.php?page=woo_discount_rules&tab=settings#wdr_override_custom_price_1' ) ) ) ?>
+						<?php printf( __( '<strong>WooCommerce Multi Currency and Woo Discount Rules compatibility issue</strong>: To make the two plugins work properly, please go to <a href="%s">Woo Discount Rules/Settings/Third party plugin conflict fixes & options</a> and check the "No" checkbox next to "Do you have custom prices set using another plugin or custom code?"', 'woocommerce-multi-currency' ), admin_url( 'admin.php?page=woo_discount_rules&tab=settings#wdr_override_custom_price_1' ) ) ?>
                     </p>
                 </div>
 				<?php
@@ -99,6 +118,26 @@ class WOOMULTI_CURRENCY_F_Plugin_Woo_Discount_Rules {
 		$subtotal_additional_text .= '</span>';
 
 		return $subtotal_additional_text;
+	}
+
+	/**
+	 * @param $price
+	 * @param $product WC_Product
+	 *
+	 * @return mixed
+	 */
+	public function advanced_woo_discount_rules_get_regular_price( $price, $product ) {
+		if ( $product && $this->settings->check_fixed_price() ) {
+			$current_currency = $this->settings->get_current_currency();
+			if ( $current_currency !== $this->settings->get_default_currency() ) {
+				$fixed_price = wmc_adjust_fixed_price( json_decode( get_post_meta( $product->get_id(), '_regular_price_wmcp', true ), true ) );
+				if ( isset( $fixed_price[ $current_currency ] ) && $fixed_price[ $current_currency ] > 0 ) {
+					$price = $fixed_price[ $current_currency ];
+				}
+			}
+		}
+
+		return $price;
 	}
 
 	public function advanced_woo_discount_rules_additional_fee_amount( $price, $cart ) {

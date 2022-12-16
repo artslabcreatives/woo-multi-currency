@@ -1,25 +1,24 @@
 <?php
 
 /*
-Class Name: WOOMULTI_CURRENCY_F_Admin_System
-Author: Artslab Creatives (support@dev.artslabcreatives.com)
-Author URI: https://plugins.artslabcreatives.com
-Copyright 2022 artslabcreatives.com. All rights reserved.
+Class Name: WOOMULTI_CURRENCY_Admin_System
+Author: Andy Ha (support@villatheme.com)
+Author URI: http://villatheme.com
+Copyright 2015-2017 villatheme.com. All rights reserved.
 */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Admin_System {
+class WOOMULTI_CURRENCY_Admin_System {
 
 
 	public function __construct() {
-		add_action( 'admin_menu', array( $this, 'menu_page' ) );
+		add_action( 'admin_menu', array( $this, 'menu_page' ) ,15);
 	}
 
-	public function page_callback() {
-		?>
-        <h2><?php esc_html_e( 'System Status', 'woo-multi-currency' ) ?></h2>
+	public function page_callback() { ?>
+        <h2><?php esc_html_e( 'System Status', 'woocommerce-multi-currency' ) ?></h2>
         <table cellspacing="0" id="status" class="widefat">
             <tbody>
             <tr>
@@ -49,21 +48,21 @@ class WOOMULTI_CURRENCY_F_Admin_System {
             </tr>
 
             <tr>
-                <td data-export-label="<?php esc_html_e( 'PHP Time Limit', 'woo-multi-currency' ) ?>"><?php esc_html_e( 'PHP Time Limit', 'woo-multi-currency' ) ?></td>
-                <td><?php echo esc_html( ini_get( 'max_execution_time' ) ); ?></td>
+                <td data-export-label="<?php esc_html_e( 'PHP Time Limit', 'woocommerce-multi-currency' ) ?>"><?php esc_html_e( 'PHP Time Limit', 'woocommerce-multi-currency' ) ?></td>
+                <td><?php echo ini_get( 'max_execution_time' ); ?></td>
             </tr>
             <tr>
-                <td data-export-label="<?php esc_html_e( 'PHP Max Input Vars', 'woo-multi-currency' ) ?>"><?php esc_html_e( 'PHP Max Input Vars', 'woo-multi-currency' ) ?></td>
+                <td data-export-label="<?php esc_html_e( 'PHP Max Input Vars', 'woocommerce-multi-currency' ) ?>"><?php esc_html_e( 'PHP Max Input Vars', 'woocommerce-multi-currency' ) ?></td>
 
-                <td><?php echo esc_html( ini_get( 'max_input_vars' ) ); ?></td>
+                <td><?php echo ini_get( 'max_input_vars' ); ?></td>
             </tr>
             <tr>
-                <td data-export-label="<?php esc_html_e( 'Memory Limit', 'woo-multi-currency' ) ?>"><?php esc_html_e( 'Memory Limit', 'woo-multi-currency' ) ?></td>
+                <td data-export-label="<?php esc_html_e( 'Memory Limit', 'woocommerce-multi-currency' ) ?>"><?php esc_html_e( 'Memory Limit', 'woocommerce-multi-currency' ) ?></td>
 
-                <td><?php echo esc_html( ini_get( 'memory_limit' ) ); ?></td>
+                <td><?php echo ini_get( 'memory_limit' ); ?></td>
             </tr>
             <tr>
-                <td data-export-label="<?php esc_html_e( 'Allow URL Open', 'woo-multi-currency' ) ?>"><?php esc_html_e( 'Allow URL Open', 'woo-multi-currency' ) ?></td>
+                <td data-export-label="<?php esc_html_e( 'Allow URL Open', 'woocommerce-multi-currency' ) ?>"><?php esc_html_e( 'Allow URL Open', 'woocommerce-multi-currency' ) ?></td>
                 <td>
 					<?php
 					if ( ini_get( 'allow_url_fopen' ) ) {
@@ -75,36 +74,36 @@ class WOOMULTI_CURRENCY_F_Admin_System {
                 </td>
             </tr>
             <tr>
-                <td data-export-label="<?php esc_html_e( 'Session path', 'woo-multi-currency' ) ?>"><?php esc_html_e( 'Session path', 'woo-multi-currency' ) ?></td>
+                <td data-export-label="<?php esc_html_e( 'Session path', 'woocommerce-multi-currency' ) ?>"><?php esc_html_e( 'Session path', 'woocommerce-multi-currency' ) ?></td>
                 <td><?php
 					$check_session = @fopen( session_save_path() . 'test-log.log', 'a' ) ? true : false;
 					if ( $check_session ) {
 						echo '<mark class="yes"><span class="dashicons dashicons-yes"></span> <code class="private">' . esc_html( session_save_path() ) . '</code></mark> ';
 					} else {
-						echo '<mark class="error"><span class="dashicons dashicons-warning"></span> ' . sprintf( __( 'To allow logging, make %1$s writable.', 'woo-multi-currency' ), '<code>' . esc_html( session_save_path() ) . '</code>' ) . '</mark>';
+						echo '<mark class="error"><span class="dashicons dashicons-warning"></span> ' . sprintf( __( 'To allow logging, make %1$s writable.', 'woocommerce-multi-currency' ), '<code>' . session_save_path() . '</code>' ) . '</mark>';
 					}
 					?></td>
             </tr>
             <tr>
-                <td data-export-label="<?php esc_html_e( 'Your IP', 'woo-multi-currency' ) ?>"><?php esc_html_e( 'Your IP', 'woo-multi-currency' ) ?></td>
+                <td data-export-label="<?php esc_html_e( 'Your IP', 'woocommerce-multi-currency' ) ?>"><?php esc_html_e( 'Your IP', 'woocommerce-multi-currency' ) ?></td>
                 <td>
                     <ul>
                         <li><strong>
 								<?php
 								$ip = new WC_Geolocation();
-								esc_html_e( '[WooCommerce] Your IP', 'woo-multi-currency' )
-								?> : <?php echo esc_html( $ip->get_ip_address() ) ?>
+								esc_html_e( '[WooCommerce] Your IP', 'woocommerce-multi-currency' )
+								?> : <?php echo $ip->get_ip_address() ?>
                             </strong>
                         </li>
                         <li><strong>
 								<?php
-								esc_html_e( '[WooCommerce] Your GEO IP', 'woo-multi-currency' )
-								?> : <?php echo esc_html( json_encode( $ip->geolocate_ip() ) ) ?>
+								esc_html_e( '[WooCommerce] Your GEO IP', 'woocommerce-multi-currency' )
+								?> : <?php echo json_encode( $ip->geolocate_ip() ) ?>
                             </strong>
                         </li>
                         <li><h3>
 								<?php
-								esc_html_e( '_SERVER system', 'woo-multi-currency' )
+								esc_html_e( '_SERVER system', 'woocommerce-multi-currency' )
 								?></h3>
                             <pre><?php print_r( $_SERVER ) ?></pre>
                         </li>
@@ -113,18 +112,18 @@ class WOOMULTI_CURRENCY_F_Admin_System {
             </tr>
             </tbody>
         </table>
-		<?php
-	}
+	<?php }
 
 	/**
 	 * Register a custom menu page.
 	 */
 	public function menu_page() {
 		add_submenu_page(
-			'woo-multi-currency', esc_html__( 'System Status', 'woo-multi-currency' ), esc_html__( 'System Status', 'woo-multi-currency' ), 'manage_woocommerce', 'woo-multi-currency-system-status', array(
+			'woocommerce-multi-currency', esc_html__( 'System Status', 'woocommerce-multi-currency' ), esc_html__( 'System Status', 'woocommerce-multi-currency' ), 'manage_options', 'woocommerce-multi-currency-system-status', array(
 				$this,
 				'page_callback'
 			)
 		);
+
 	}
 }

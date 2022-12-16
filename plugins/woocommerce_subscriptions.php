@@ -1,39 +1,27 @@
 <?php
 
 /**
- * Class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_Subscriptions
+ * Class WOOMULTI_CURRENCY_Plugin_WooCommerce_Subscriptions
  * Author: WooCommerce
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_Subscriptions {
+class WOOMULTI_CURRENCY_Plugin_WooCommerce_Subscriptions {
 	protected $settings;
 
 	public function __construct() {
-		$this->settings = WOOMULTI_CURRENCY_F_Data::get_ins();
+		$this->settings = WOOMULTI_CURRENCY_Data::get_ins();
 		if ( $this->settings->get_enable() && is_plugin_active( 'woocommerce-subscriptions/woocommerce-subscriptions.php' ) ) {
 			add_filter( 'woocommerce_subscriptions_product_price', array( $this, 'get_price' ) );
 			add_filter( 'woocommerce_subscriptions_product_sale_price', array( $this, 'revert_sale_price' ), 10, 2 );
-			add_filter( 'woocommerce_subscriptions_product_sign_up_fee', array(
-				$this,
-				'woocommerce_subscriptions_product_sign_up_fee'
-			) );
+			add_filter( 'woocommerce_subscriptions_product_sign_up_fee', array( $this, 'woocommerce_subscriptions_product_sign_up_fee' ) );
 			/*Use fixed price if enabled*/
-			add_filter( 'woocommerce_subscriptions_product_price', array(
-				$this,
-				'woocommerce_subscriptions_product_price'
-			), 10, 2 );
+			add_filter( 'woocommerce_subscriptions_product_price', array( $this, 'woocommerce_subscriptions_product_price' ), 10, 2 );
 			/*Convert renewal cart to default currency*/
-			add_action( 'woocommerce_load_cart_from_session', array(
-				$this,
-				'woocommerce_load_cart_from_session'
-			) );
-			add_action( 'woocommerce_cart_loaded_from_session', array(
-				$this,
-				'woocommerce_cart_loaded_from_session'
-			) );
+			add_action( 'woocommerce_load_cart_from_session', array( $this, 'woocommerce_load_cart_from_session' ) );
+			add_action( 'woocommerce_cart_loaded_from_session', array( $this, 'woocommerce_cart_loaded_from_session' ) );
 		}
 	}
 
@@ -119,16 +107,20 @@ class WOOMULTI_CURRENCY_F_Plugin_WooCommerce_Subscriptions {
 	 */
 	public function woocommerce_order_get_items( $items, $order ) {
 		if ( ! wcs_is_subscription( $order ) ) {
-			return $items;
+			$subscriptions = wcs_get_subscriptions_for_renewal_order( $order );
+			if ( ! count( $subscriptions ) ) {
+				return $items;
+			}
 		}
 		$renewal_order_id = $order->get_id();
 		$related_order_id = wp_get_post_parent_id( $renewal_order_id );
+		$order_currency   = get_post_meta( $renewal_order_id, '_order_currency', true );
+		$wmc_order_info   = get_post_meta( $renewal_order_id, 'wmc_order_info', true );
 		if ( $related_order_id ) {
-			$order_currency = get_post_meta( $related_order_id, '_order_currency', true );
-			$wmc_order_info = get_post_meta( $related_order_id, 'wmc_order_info', true );
-		} else {
-			$order_currency = get_post_meta( $renewal_order_id, '_order_currency', true );
-			$wmc_order_info = get_post_meta( $renewal_order_id, 'wmc_order_info', true );
+			$related_order_currency = get_post_meta( $related_order_id, '_order_currency', true );
+			if ( $order_currency === $related_order_currency ) {
+				$wmc_order_info = get_post_meta( $related_order_id, 'wmc_order_info', true );
+			}
 		}
 		$default_currency = $this->settings->get_default_currency();
 		$list_currencies  = $this->settings->get_list_currencies();
