@@ -11,17 +11,17 @@ jobs:
       with:
         fetch-depth: 0
     - name: Updates Folder Zip Delete
-      run: rm -f updates/woo-multi-currency.zip
+      run: rm -f updates/woocommerce-multi-currency.zip
     - name: Zip Folder
-      run: zip -r woo-multi-currency.zip . -x ".git/*" ".github/*"
+      run: zip -r woocommerce-multi-currency.zip . -x ".git/*" ".github/*"
     - name: Initial Zip
       run: echo "Created initial zip"
     - name: Zip the Zip
-      run: zip -r woo-multi-currency.zip2.zip ./woo-multi-currency.zip
+      run: zip -r woocommerce-multi-currency.zip2.zip ./woocommerce-multi-currency.zip
     - name: First Zip Delete
-      run: rm woo-multi-currency.zip
+      run: rm woocommerce-multi-currency.zip
     - name: Zip Rename
-      run: mv woo-multi-currency.zip2.zip updates/woo-multi-currency.zip
+      run: mv woocommerce-multi-currency.zip2.zip updates/woocommerce-multi-currency.zip
     - name: Remove existing update.json
       run: rm updates/update.json
     - name: 'Get Previous tag'
@@ -41,7 +41,7 @@ jobs:
     - name: Replace version in update.json
       run: sed -i 's/_VERSION_/${{steps.semvers.outputs.minor}}/' updates/update.json
     - name: Replace version in plugin php file
-      run: sed -i 's/${{ steps.previoustag.outputs.tag }}/${{steps.semvers.outputs.minor}}/' woo-multi-currency.php
+      run: sed -i 's/${{ steps.previoustag.outputs.tag }}/${{steps.semvers.outputs.minor}}/' woocommerce-multi-currency.php
     - uses: EndBug/add-and-commit@v9
       with:
         tag: "${{steps.semvers.outputs.minor}}"
