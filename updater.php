@@ -25,7 +25,7 @@ if( ! class_exists( 'ALCMCUpdater' ) ) {
 			$remote = get_transient($this->cache_key);
 			if(false === $remote || ! $this->cache_allowed) {
 				$remote = wp_remote_get(
-					'https://plugins.artslabcreatives.com/woo-multi-currency/updates/update.json',
+					'https://plugins.artslabcreatives.com/woocommerce-multi-currency/updates/update.json',
 					array(
 						'timeout' => 10,
 						'headers' => array(
@@ -116,7 +116,7 @@ if( ! class_exists( 'ALCMCUpdater' ) ) {
 			) {
 				$res = new stdClass();
 				$res->slug = $this->plugin_slug;
-				$res->plugin = basename(dirname(__FILE__)).'/woo-multi-currency.php';
+				$res->plugin = basename(dirname(__FILE__)).'/woocommerce-multi-currency.php';
 				$res->new_version = $remote->version;
 				$res->tested = $remote->tested;
 				$res->package = $remote->download_url;
